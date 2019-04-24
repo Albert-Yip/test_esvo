@@ -45,7 +45,12 @@ public:
 
 BenchmarkNode::BenchmarkNode()
 {
-  cam_ = new vk::PinholeCamera(752, 480, 315.5, 315.5, 376.0, 240.0);
+  cam_ = new vk::PinholeCamera(346, 260, 194.8, 194.8, 170.2, 127.0);
+  // //   projection_matrix:
+  // - [194.8389461655774, 0.0, 170.20896993269332, 0.0]
+  // - [0.0, 194.8389461655774, 127.00404928416845, 0.0]
+  // - [0.0, 0.0, 1.0, 0.0]
+  // //  resolution: [346, 260]
   vo_ = new svo::FrameHandlerMono(cam_);
   vo_->start();
 }

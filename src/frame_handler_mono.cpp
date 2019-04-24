@@ -55,6 +55,11 @@ FrameHandlerMono::~FrameHandlerMono()
   delete depth_filter_;
 }
 
+void testFEVO(const vector<TrackedFeature>, double timestamp)
+{
+  
+}
+
 void FrameHandlerMono::addImage(const cv::Mat& img, const double timestamp)
 {
   if(!startFrameProcessingCommon(timestamp))

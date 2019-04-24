@@ -25,6 +25,14 @@
 
 namespace svo {
 
+// Self-defined struct.
+struct TrackedFeature
+{
+  int id = -1;
+  double x = -1;
+  double y = -1;
+};
+
 /// Monocular Visual Odometry Pipeline as described in the SVO paper.
 class FrameHandlerMono : public FrameHandlerBase
 {
@@ -34,6 +42,9 @@ public:
   FrameHandlerMono(vk::AbstractCamera* cam);
   virtual ~FrameHandlerMono();
 
+  // Self-defined main process function
+  void testFEVO(const vector<TrackedFeature>, double timestamp);
+  
   /// Provide an image.
   void addImage(const cv::Mat& img, double timestamp);
 
