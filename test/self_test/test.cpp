@@ -27,7 +27,7 @@ istream &read_frame(istream &fin, vector<Tracked_Feature> &feature_list, double 
 {
     Tracked_Feature temp_Feature;
     string line;
-    cout<<"Start reading frame (three lines)"<<endl;
+    // cout<<"Start reading frame (three lines)"<<endl;
 
     for(int line_counter=0;line_counter<3;line_counter++)
     {
@@ -96,9 +96,23 @@ int main(int argc, char const *argv[])
     while(read_frame(fin, feature_list, timestamp))
     {
         cout<<"\nResult "<<":\n";
-        for(auto ft:feature_list)
+        // for(auto ft:feature_list)
+        // {
+        //     if(ft.id==0)
+        //     {
+        //         //invalid feature
+        //     }
+        //     cout<<timestamp<<"  "<<ft.id<<"  "<<ft.x<<"  "<<ft.y<<endl;
+        // }
+        for(auto iter=feature_list.begin(); iter!=feature_list.end(); iter++)
         {
-            cout<<timestamp<<"  "<<ft.id<<"  "<<ft.x<<"  "<<ft.y<<endl;
+            if((*iter).id == 0)
+            {
+                iter = feature_list.erase(iter);
+                iter--;//erase删除后会返回下一个iter
+                continue;
+            }
+            cout<<timestamp<<"  "<<(*iter).id<<"  "<<(*iter).x<<"  "<<(*iter).y<<endl;
         }
         timestamp = -1.0;
         vector<Tracked_Feature>().swap(feature_list);

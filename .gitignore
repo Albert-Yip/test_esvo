@@ -2,3 +2,4 @@ build/
 bin/
 lib/
 .vscode/
+test/self_test/test
