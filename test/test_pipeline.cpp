@@ -41,6 +41,8 @@ public:
   BenchmarkNode();
   ~BenchmarkNode();
   void runFromFolder();
+  void runFromTrackingResult();
+  istream &read_frame(istream &fin, vector<TrackedFeature> &feature_list, double &timestamp);
 };
 
 BenchmarkNode::BenchmarkNode()
@@ -59,6 +61,103 @@ BenchmarkNode::~BenchmarkNode()
 {
   delete vo_;
   delete cam_;
+}
+
+//read three lines from the output_result, i.e. one spatiotemporal window - or one frame.
+istream & BenchmarkNode::read_frame(istream &fin, vector<TrackedFeature> &feature_list, double &timestamp)
+{
+    TrackedFeature temp_Feature;
+    string line;
+    // cout<<"Start reading frame (three lines)"<<endl;
+
+    for(int line_counter=0;line_counter<3;line_counter++)
+    {
+        getline(fin, line);
+        istringstream iss(line);
+        if(line_counter%3 == 0)//id row
+        {
+            iss>>timestamp;
+            while(iss>>temp_Feature.id)
+            {
+                // iss>>temp_Feature.id;
+                feature_list.push_back(temp_Feature);
+            }
+        }
+        else if(line_counter%3 == 1)//x row
+        {
+            double temp = -1;
+            double temp_x = -1;
+            int position = 0;
+            iss>>temp;
+            if(temp!=timestamp)
+            {
+                cout<<"ts="<<temp<<", timestamp is wrong!"<<endl;
+                // return 0;
+            }
+            while(iss>>temp_x)
+            {
+                // iss>>temp_x;
+                feature_list.at(position).x = temp_x;
+                position++;
+            }
+        }
+        else if(line_counter%3 == 2)//y row
+        {
+            double temp = -1;
+            double temp_y = -1;
+            int position = 0;
+            iss>>temp;
+            if(temp!=timestamp)
+            {
+                cout<<"ts="<<temp<<", timestamp is wrong!"<<endl;
+                // return 0;
+            }
+            while(iss>>temp_y)
+            {
+                // iss>>temp_y;
+                feature_list.at(position).y = temp_y;
+                position++;
+            }
+        }
+    }
+    
+    return fin;
+}
+
+void BenchmarkNode::runFromTrackingResult()
+{
+  //Read frame
+  ifstream fin("/home/albert/workSpace/data/output_result_day_long2.txt");
+  vector<TrackedFeature> feature_list;
+  double timestamp = -1.0;
+  while(read_frame(fin, feature_list, timestamp))
+  {
+    cout<<"\nResult "<<":\n";
+    for(auto iter=feature_list.begin(); iter!=feature_list.end(); iter++)
+    {
+        if((*iter).id == 0)
+        {
+            iter = feature_list.erase(iter);
+            iter--;//erase删除后会返回下一个iter
+            continue;
+        }
+        cout<<timestamp<<"  "<<(*iter).id<<"  "<<(*iter).x<<"  "<<(*iter).y<<endl;
+    }
+    // process frame
+    vo_->testESVO(feature_list, timestamp);
+    //set ts and vector to NULL for the new coming frame
+    timestamp = -1.0;
+    vector<TrackedFeature>().swap(feature_list);
+    // display tracking quality
+    if(vo_->lastFrame() != NULL)
+    {
+      std::cout << "Frame-Id: " << vo_->lastFrame()->id_ << " \t"
+                  << "#Features: " << vo_->lastNumObservations() << " \t"
+                  << "Proc. Time: " << vo_->lastProcessingTime()*1000 << "ms \n";
+
+      // access the pose of the camera via vo_->lastFrame()->T_f_w_.
+    }
+  }
 }
 
 void BenchmarkNode::runFromFolder()
@@ -95,7 +194,7 @@ int main(int argc, char** argv)
 {
   {
     svo::BenchmarkNode benchmark;
-    benchmark.runFromFolder();
+    benchmark.runFromTrackingResult();
   }
   printf("BenchmarkNode finished.\n");
   return 0;

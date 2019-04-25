@@ -25,13 +25,14 @@
 
 namespace svo {
 
-// Self-defined struct.
-struct TrackedFeature
-{
-  int id = -1;
-  double x = -1;
-  double y = -1;
-};
+// Self-defined struct in global.h
+struct TrackedFeature;
+// {
+//   int id = -1;
+//   double x = -1.0;
+//   double y = -1.0;
+// //   double ts = -1;
+// };
 
 /// Monocular Visual Odometry Pipeline as described in the SVO paper.
 class FrameHandlerMono : public FrameHandlerBase
@@ -43,7 +44,7 @@ public:
   virtual ~FrameHandlerMono();
 
   // Self-defined main process function
-  void testFEVO(const vector<TrackedFeature>, double timestamp);
+  void testESVO(const vector<TrackedFeature> &feature_list, double timestamp);
   
   /// Provide an image.
   void addImage(const cv::Mat& img, double timestamp);
@@ -92,6 +93,15 @@ protected:
 
   /// Processes all frames after the first two keyframes.
   virtual UpdateResult processFrame();
+
+  /// processSecond_TFrame.
+  virtual UpdateResult processSecond_TFrame();
+
+  /// processFirst_TFrame.
+  virtual UpdateResult processFirst_TFrame();
+
+  /// process_TFrame.
+  virtual UpdateResult process_TFrame();
 
   /// Try relocalizing the frame at relative position to provided keyframe.
   virtual UpdateResult relocalizeFrame(

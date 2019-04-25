@@ -7,15 +7,8 @@
 
 using namespace std;
 
-struct Event
-{
-    uint16_t x;
-    uint16_t y;
-    bool polarity;
-    uint64_t timestamp;
-};
 
-struct Tracked_Feature
+struct TrackedFeature
 {
   int id = -1;
   double x = -1.0;
@@ -23,9 +16,10 @@ struct Tracked_Feature
 //   double ts = -1;
 };
 
-istream &read_frame(istream &fin, vector<Tracked_Feature> &feature_list, double &timestamp)
+//read three lines from the output_result, i.e. one spatiotemporal window - or one frame.
+istream &read_frame(istream &fin, vector<TrackedFeature> &feature_list, double &timestamp)
 {
-    Tracked_Feature temp_Feature;
+    TrackedFeature temp_Feature;
     string line;
     // cout<<"Start reading frame (three lines)"<<endl;
 
@@ -91,7 +85,7 @@ istream &read_frame(istream &fin, vector<Tracked_Feature> &feature_list, double 
 int main(int argc, char const *argv[])
 {
     ifstream fin("/home/albert/workSpace/data/output_result_day_long2.txt");
-    vector<Tracked_Feature> feature_list;
+    vector<TrackedFeature> feature_list;
     double timestamp = -1.0;
     while(read_frame(fin, feature_list, timestamp))
     {
@@ -115,7 +109,7 @@ int main(int argc, char const *argv[])
             cout<<timestamp<<"  "<<(*iter).id<<"  "<<(*iter).x<<"  "<<(*iter).y<<endl;
         }
         timestamp = -1.0;
-        vector<Tracked_Feature>().swap(feature_list);
+        vector<TrackedFeature>().swap(feature_list);
     }
     
     return 0;

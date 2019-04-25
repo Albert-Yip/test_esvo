@@ -40,6 +40,17 @@ Frame::Frame(vk::AbstractCamera* cam, const cv::Mat& img, double timestamp) :
   initFrame(img);
 }
 
+Frame::Frame(vk::AbstractCamera* cam, const vector<TrackedFeature> &feature_list, double timestamp) :
+    id_(frame_counter_++),
+    timestamp_(timestamp),
+    cam_(cam),
+    key_pts_(5),
+    is_keyframe_(false),
+    v_kf_(NULL),
+    feature_list_(feature_list)
+{
+}
+
 Frame::~Frame()
 {
   std::for_each(fts_.begin(), fts_.end(), [&](Feature* i){delete i;});

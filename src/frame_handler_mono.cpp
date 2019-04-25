@@ -55,9 +55,25 @@ FrameHandlerMono::~FrameHandlerMono()
   delete depth_filter_;
 }
 
-void testFEVO(const vector<TrackedFeature>, double timestamp)
+void FrameHandlerMono::testESVO(const vector<TrackedFeature> &feature_list, double timestamp)
 {
-  
+  // some cleanup from last iteration, can't do before because of visualization
+  core_kfs_.clear();
+  overlap_kfs_.clear();
+
+  // create new frame
+  // SVO_START_TIMER("tracked_frame_creation");
+  new_frame_.reset(new Frame(cam_, feature_list, timestamp));
+  // SVO_STOP_TIMER("tracked_frame_creation");
+
+  // process frame
+  UpdateResult res = RESULT_FAILURE;
+  if(stage_ == STAGE_DEFAULT_FRAME)
+    res = process_TFrame();
+  else if(stage_ == STAGE_SECOND_FRAME)
+    res = processSecond_TFrame();
+  else if(stage_ == STAGE_FIRST_FRAME)
+    res = processFirst_TFrame();
 }
 
 void FrameHandlerMono::addImage(const cv::Mat& img, const double timestamp)
@@ -110,6 +126,21 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::processFirstFrame()
   stage_ = STAGE_SECOND_FRAME;
   SVO_INFO_STREAM("Init: Selected first frame.");
   return RESULT_IS_KEYFRAME;
+}
+
+FrameHandlerMono::UpdateResult FrameHandlerMono::processFirst_TFrame()
+{
+  
+}
+
+FrameHandlerMono::UpdateResult FrameHandlerMono::processSecond_TFrame()
+{
+  
+}
+
+FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
+{
+  
 }
 
 FrameHandlerBase::UpdateResult FrameHandlerMono::processSecondFrame()

@@ -1,5 +1,7 @@
 build/
 bin/
 lib/
-.vscode/
+debug/
+.vscode/ipch/
 test/self_test/test
+test/self_test/.vscode

@@ -90,6 +90,15 @@ namespace svo
 
   class Frame;
   typedef boost::shared_ptr<Frame> FramePtr;
+
+  // Self-defined struct.
+  struct TrackedFeature
+  {
+    int id = -1;
+    double x = -1.0;
+    double y = -1.0;
+  //   double ts = -1;
+  };
 } // namespace svo
 
 #endif // SVO_GLOBAL_H_
