@@ -1,22 +1,30 @@
 {
   "tasks": [
     {
-      // "type": "shell",
-      // "label": "g++ build active file",
-      // "command": "/usr/bin/g++",
-      // "args": [
-      //   "-g",
-      //   "${file}",
-      //   "-o",
-      //   "${fileDirname}/${fileBasenameNoExtension}"
-      // ],
-      // "options": {
-      //   "cwd": "/usr/bin"
-      // }
-      "label": "build",
       "type": "shell",
+      "label": "build",
       "command": "cd ~/workSpace/test_esvo/debug && cmake -DCMAKE_BUILD_TYPE=Debug .. && make"
+    },
+    {
+      "type": "shell",
+      "label": "simple_build_test",
+      "command": "/usr/bin/g++",
+      "args": [
+        "-g",
+        "${file}",
+        "-o",
+        "${fileDirname}/${fileBasenameNoExtension}"
+      ],
+      "options": {
+        "cwd": "/usr/bin"
+      }
+    },
+    {
+      "type": "shell",
+      "label": "cmake_build_test",
+      "command": "cd ${fileDirname}/build && cmake -DCMAKE_BUILD_TYPE=Debug -g .. && make"
     }
+
   ],
   "version": "2.0.0"
 }

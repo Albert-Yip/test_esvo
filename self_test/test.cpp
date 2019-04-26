@@ -4,6 +4,7 @@
 #include <stdint.h>
 #include <string>
 #include <vector>
+// #include "../../include/svo/frame.h"
 
 using namespace std;
 
@@ -45,11 +46,10 @@ istream &read_frame(istream &fin, vector<TrackedFeature> &feature_list, double &
             if(temp!=timestamp)
             {
                 cout<<"ts="<<temp<<", timestamp is wrong!"<<endl;
-                // return 0;
+                // return nullptr;
             }
             while(iss>>temp_x)
             {
-                // iss>>temp_x;
                 feature_list.at(position).x = temp_x;
                 position++;
             }
@@ -67,7 +67,6 @@ istream &read_frame(istream &fin, vector<TrackedFeature> &feature_list, double &
             }
             while(iss>>temp_y)
             {
-                // iss>>temp_y;
                 feature_list.at(position).y = temp_y;
                 position++;
             }
@@ -90,15 +89,7 @@ int main(int argc, char const *argv[])
     while(read_frame(fin, feature_list, timestamp))
     {
         cout<<"\nResult "<<":\n";
-        // for(auto ft:feature_list)
-        // {
-        //     if(ft.id==0)
-        //     {
-        //         //invalid feature
-        //     }
-        //     cout<<timestamp<<"  "<<ft.id<<"  "<<ft.x<<"  "<<ft.y<<endl;
-        // }
-        for(auto iter=feature_list.begin(); iter!=feature_list.end(); iter++)
+        for(auto iter=feature_list.begin(); iter!=feature_list.end(); iter++)//除去id=0的无效特征点并打印feature_list
         {
             if((*iter).id == 0)
             {
@@ -109,7 +100,7 @@ int main(int argc, char const *argv[])
             cout<<timestamp<<"  "<<(*iter).id<<"  "<<(*iter).x<<"  "<<(*iter).y<<endl;
         }
         timestamp = -1.0;
-        vector<TrackedFeature>().swap(feature_list);
+        vector<TrackedFeature>().swap(feature_list);//feature_list empty
     }
     
     return 0;

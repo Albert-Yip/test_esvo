@@ -57,6 +57,8 @@ FrameHandlerMono::~FrameHandlerMono()
 
 void FrameHandlerMono::testESVO(const vector<TrackedFeature> &feature_list, double timestamp)
 {
+  if(!startFrameProcessingCommon(timestamp))
+    return;
   // some cleanup from last iteration, can't do before because of visualization
   core_kfs_.clear();
   overlap_kfs_.clear();
@@ -65,7 +67,7 @@ void FrameHandlerMono::testESVO(const vector<TrackedFeature> &feature_list, doub
   // SVO_START_TIMER("tracked_frame_creation");
   new_frame_.reset(new Frame(cam_, feature_list, timestamp));
   // SVO_STOP_TIMER("tracked_frame_creation");
-
+  
   // process frame
   UpdateResult res = RESULT_FAILURE;
   if(stage_ == STAGE_DEFAULT_FRAME)
@@ -130,17 +132,9 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::processFirstFrame()
 
 FrameHandlerMono::UpdateResult FrameHandlerMono::processFirst_TFrame()
 {
-  
-}
+  new_frame_->T_f_w_ = SE3(Matrix3d::Identity(), Vector3d::Zero());
 
-FrameHandlerMono::UpdateResult FrameHandlerMono::processSecond_TFrame()
-{
-  
-}
-
-FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
-{
-  
+  return RESULT_IS_KEYFRAME;
 }
 
 FrameHandlerBase::UpdateResult FrameHandlerMono::processSecondFrame()
@@ -167,6 +161,16 @@ FrameHandlerBase::UpdateResult FrameHandlerMono::processSecondFrame()
   klt_homography_init_.reset();
   SVO_INFO_STREAM("Init: Selected second frame, triangulated initial map.");
   return RESULT_IS_KEYFRAME;
+}
+
+FrameHandlerMono::UpdateResult FrameHandlerMono::processSecond_TFrame()
+{
+  
+}
+
+FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
+{
+  
 }
 
 FrameHandlerBase::UpdateResult FrameHandlerMono::processFrame()

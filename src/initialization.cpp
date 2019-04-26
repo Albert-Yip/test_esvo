@@ -36,6 +36,14 @@ InitResult KltHomographyInit::addFirstFrame(FramePtr frame_ref)
     return FAILURE;
   }
   frame_ref_ = frame_ref;
+  px_cur_.insert(px_cur_.begin(), px_ref_.begin(), px_ref_.end());//在指定位置loc前插入区间[start, end)的所有元素. 这里是把用于第二帧的current的特征点位置先初始化为ref第一帧的，随后用光流法更新
+  return SUCCESS;
+}
+
+InitResult KltHomographyInit::addFirst_TFrame(FramePtr frame_ref)
+{
+  reset();
+  frame_ref_ = frame_ref;
   px_cur_.insert(px_cur_.begin(), px_ref_.begin(), px_ref_.end());
   return SUCCESS;
 }

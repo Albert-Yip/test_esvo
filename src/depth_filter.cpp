@@ -168,7 +168,7 @@ void DepthFilter::reset()
 
 void DepthFilter::updateSeedsLoop()
 {
-  while(!boost::this_thread::interruption_requested())
+  while(!boost::this_thread::interruption_requested())//在没有interrupt请求之前，一直循环进行df线程
   {
     FramePtr frame;
     {
