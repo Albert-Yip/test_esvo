@@ -18,6 +18,7 @@
 #define SVO_INITIALIZATION_H
 
 #include <svo/global.h>
+#include <opencv2/core/eigen.hpp>
 
 namespace svo {
 
@@ -40,9 +41,12 @@ public:
   InitResult addFirstFrame(FramePtr frame_ref);
   InitResult addFirst_TFrame(FramePtr frame_ref);
   InitResult addSecondFrame(FramePtr frame_ref);
+  InitResult addSecond_TFrame(FramePtr frame_ref);
   void reset();
 
 protected:
+  vector<TrackedFeature> feature_list_ref_;      
+  vector<TrackedFeature> feature_list_cur_;
   vector<cv::Point2f> px_ref_;      //!< keypoints to be tracked in reference frame.
   vector<cv::Point2f> px_cur_;      //!< tracked keypoints in current frame.
   vector<Vector3d> f_ref_;          //!< bearing vectors corresponding to the keypoints in the reference image.
@@ -74,6 +78,13 @@ void computeHomography(
     const vector<Vector3d>& f_cur,
     double focal_length,
     double reprojection_threshold,
+    vector<int>& inliers,
+    vector<Vector3d>& xyz_in_cur,
+    SE3& T_cur_from_ref);
+
+void poseEstimate_triangulation(
+    const vector<TrackedFeature>& feature_list_ref_,     
+    const vector<TrackedFeature>& feature_list_cur_,
     vector<int>& inliers,
     vector<Vector3d>& xyz_in_cur,
     SE3& T_cur_from_ref);

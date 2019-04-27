@@ -43,8 +43,9 @@ InitResult KltHomographyInit::addFirstFrame(FramePtr frame_ref)
 InitResult KltHomographyInit::addFirst_TFrame(FramePtr frame_ref)
 {
   reset();
+  feature_list_ref_.assign(frame_ref->feature_list_.begin(),frame_ref->feature_list_.end());
   frame_ref_ = frame_ref;
-  px_cur_.insert(px_cur_.begin(), px_ref_.begin(), px_ref_.end());
+  SVO_INFO_STREAM("Add First Frame successfully, there are "<<feature_list_ref_.size()<<" features");
   return SUCCESS;
 }
 
@@ -65,13 +66,55 @@ InitResult KltHomographyInit::addSecondFrame(FramePtr frame_cur)
       f_ref_, f_cur_,
       frame_ref_->cam_->errorMultiplier2(), Config::poseOptimThresh(),
       inliers_, xyz_in_cur_, T_cur_from_ref_);
-  SVO_INFO_STREAM("Init: Homography RANSAC "<<inliers_.size()<<" inliers.");
+  SVO_INFO_STREAM("Init: Homography RANSAC "<<inliers_.size()<<" inliers.");//triangulate all features and compute reprojection errors and inliers: output->inliers_, xyz_in_cur_, T_cur_from_ref_
 
   if(inliers_.size() < Config::initMinInliers())
   {
     SVO_WARN_STREAM("Init WARNING: "<<Config::initMinInliers()<<" inliers minimum required.");
     return FAILURE;
   }
+
+  // Rescale the map such that the mean scene depth is equal to the specified scale
+  vector<double> depth_vec;
+  for(size_t i=0; i<xyz_in_cur_.size(); ++i)
+    depth_vec.push_back((xyz_in_cur_[i]).z());
+  double scene_depth_median = vk::getMedian(depth_vec);
+  double scale = Config::mapScale()/scene_depth_median;
+  frame_cur->T_f_w_ = T_cur_from_ref_ * frame_ref_->T_f_w_;
+  frame_cur->T_f_w_.translation() =
+      -frame_cur->T_f_w_.rotation_matrix()*(frame_ref_->pos() + scale*(frame_cur->pos() - frame_ref_->pos()));
+
+  // For each inlier create 3D point and add feature in both frames
+  SE3 T_world_cur = frame_cur->T_f_w_.inverse();
+  for(vector<int>::iterator it=inliers_.begin(); it!=inliers_.end(); ++it)
+  {
+    Vector2d px_cur(px_cur_[*it].x, px_cur_[*it].y);
+    Vector2d px_ref(px_ref_[*it].x, px_ref_[*it].y);
+    if(frame_ref_->cam_->isInFrame(px_cur.cast<int>(), 10) && frame_ref_->cam_->isInFrame(px_ref.cast<int>(), 10) && xyz_in_cur_[*it].z() > 0)
+    {
+      Vector3d pos = T_world_cur * (xyz_in_cur_[*it]*scale);
+      Point* new_point = new Point(pos);
+
+      Feature* ftr_cur(new Feature(frame_cur.get(), new_point, px_cur, f_cur_[*it], 0));
+      frame_cur->addFeature(ftr_cur);
+      new_point->addFrameRef(ftr_cur);
+
+      Feature* ftr_ref(new Feature(frame_ref_.get(), new_point, px_ref, f_ref_[*it], 0));
+      frame_ref_->addFeature(ftr_ref);
+      new_point->addFrameRef(ftr_ref);
+    }
+  }
+  return SUCCESS;
+}
+
+InitResult KltHomographyInit::addSecond_TFrame(FramePtr frame_cur)
+{
+  
+  //NOTE:在这做的事情：KLT光流法track了features，triangulate all features and compute reprojection errors and inliers.
+  //Output: inliers_(对应内点feature-id的vector), xyz_in_cur_(对应内点feature三维位置的vector), T_cur_from_ref_
+  //因为已经做好tracking，而且ransac已经在tracking中完成，inliers设为全部重复出现特征的id，并估计T和三维位置
+  feature_list_cur_.assign(frame_cur->feature_list_.begin(),frame_cur->feature_list_.end());
+  poseEstimate_triangulation(feature_list_ref_,feature_list_cur_,inliers_,xyz_in_cur_,T_cur_from_ref_);
 
   // Rescale the map such that the mean scene depth is equal to the specified scale
   vector<double> depth_vec;
@@ -125,7 +168,7 @@ void detectFeatures(
   // now for all maximum corners, initialize a new seed
   px_vec.clear(); px_vec.reserve(new_features.size());
   f_vec.clear(); f_vec.reserve(new_features.size());
-  std::for_each(new_features.begin(), new_features.end(), [&](Feature* ftr){
+  std::for_each(new_features.begin(), new_features.end(), [&](Feature* ftr){//NOTE: [&] capture all variables within scope by reference,这里的作用就是把new_features里的feature分别复制给ftr，用于后续pushback赋值)
     px_vec.push_back(cv::Point2f(ftr->px[0], ftr->px[1]));
     f_vec.push_back(ftr->f);
     delete ftr;
@@ -200,6 +243,76 @@ void computeHomography(
                      reprojection_threshold, focal_length,
                      xyz_in_cur, inliers, outliers);
   T_cur_from_ref = Homography.T_c2_from_c1;
+}
+
+void poseEstimate_triangulation(
+    const vector<TrackedFeature>& feature_list_ref_,     
+    const vector<TrackedFeature>& feature_list_cur_,
+    vector<int>& inliers,
+    vector<Vector3d>& xyz_in_cur,
+    SE3& T_cur_from_ref)
+{
+  vector<cv::Point2f> points1;
+  vector<cv::Point2f> points2;
+  //-- 把匹配点转换为vector<Point2f>的形式
+  cv::Point2f temp_point;
+  int match_counter = 0;
+  
+  for(int i=0; i<feature_list_ref_.size(); i++)
+  {
+      for(int j=0; j<feature_list_cur_.size(); j++)
+      {
+          if(feature_list_ref_[i].id==feature_list_cur_[j].id)
+          {
+              temp_point.x = feature_list_ref_[i].x;
+              temp_point.y = feature_list_ref_[i].y;
+              points1.push_back(temp_point);
+              temp_point.x = feature_list_cur_[j].x;
+              temp_point.y = feature_list_cur_[j].y;
+              points2.push_back(temp_point);
+              break;
+          }
+      }
+  }
+
+  //-- 计算本质矩阵
+  cv::Point2d principal_point ( 170.2, 127.0 );	//相机光心, TUM dataset标定值
+  double focal_length = 194.8;			//相机焦距, TUM dataset标定值
+  cv::Mat essential_matrix;
+  essential_matrix = findEssentialMat ( points1, points2, focal_length, principal_point );
+  cout<<"essential_matrix is "<<endl<< essential_matrix<<endl;
+  //-- 从本质矩阵中恢复旋转和平移信息.
+  cv::Mat R, t;
+  recoverPose ( essential_matrix, points1, points2, R, t, focal_length, principal_point );
+  cout<<"R is "<<endl<<R<<endl;
+  cout<<"t is "<<endl<<t<<endl;
+  // 将像素坐标转换至相机归一化坐标
+  cv::Mat K = ( cv::Mat_<double> ( 3,3 ) << 194.8, 0, 170.2, 0, 194.8, 127.0, 0, 0, 1);
+  vector<Vector3d> f_ref, f_cur;
+  for (int  i=0;i<points1.size();i++ )
+  {
+    Vector3d temp_point;
+    temp_point[0] = (points1[i].x - K.at<double>(0,2)) / K.at<double>(0,0);
+    temp_point[1] = (points1[i].y - K.at<double>(1,2)) / K.at<double>(1,1);
+    temp_point[3] = 1;
+    f_ref.push_back ( temp_point );
+    temp_point[0] = (points2[i].x - K.at<double>(0,2)) / K.at<double>(0,0);
+    temp_point[1] = (points2[i].y - K.at<double>(1,2)) / K.at<double>(1,1);
+    temp_point[3] = 1;
+    f_cur.push_back ( temp_point );
+  }
+
+  vector<int> outliers;
+  //NOTE:这里有个问题是基于opencv的mat和sophus的SE3的转换
+  Matrix3d rotation_matrix;
+  Vector3d translation_vec;
+  cv::cv2eigen(R,rotation_matrix);
+  cv::cv2eigen(t,translation_vec);
+  vk::computeInliers(f_cur, f_ref,
+                     rotation_matrix, translation_vec,
+                     Config::poseOptimThresh(), focal_length,
+                     xyz_in_cur, inliers, outliers);
+  T_cur_from_ref=SE3(rotation_matrix, translation_vec);
 }
 
 

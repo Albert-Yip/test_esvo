@@ -34,7 +34,7 @@ struct Feature
   FeatureType type;     //!< Type can be corner or edgelet.
   Frame* frame;         //!< Pointer to frame in which the feature was detected.
   Vector2d px;          //!< Coordinates in pixels on pyramid level 0.
-  Vector3d f;           //!< Unit-bearing vector of the feature. NOTE: bearing vector是指FAST角点的方向向量
+  Vector3d f;           //!< Unit-bearing vector of the feature. NOTE: bearing vector是指FAST角点的方向向量（不对）， 由f(frame->cam_->cam2world(px))可知，是按照d=1把像素坐标转化为相机坐标系上的归一化坐标（P87），注意此处cam2world跟14讲不同，相当于px2cam（depth=1)
   int level;            //!< Image pyramid level where feature was extracted.
   Point* point;         //!< Pointer to 3D point which corresponds to the feature.
   Vector2d grad;        //!< Dominant gradient direction for edglets, normalized.
@@ -43,7 +43,7 @@ struct Feature
     type(CORNER),
     frame(_frame),
     px(_px),
-    f(frame->cam_->cam2world(px)),
+    f(frame->cam_->cam2world(px)),/// Project from pixels to world coordiantes. Returns a bearing vector of unit length.
     level(_level),
     point(NULL),
     grad(1.0,0.0)

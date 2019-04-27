@@ -64,9 +64,9 @@ void FrameHandlerMono::testESVO(const vector<TrackedFeature> &feature_list, doub
   overlap_kfs_.clear();
 
   // create new frame
-  // SVO_START_TIMER("tracked_frame_creation");
+  SVO_START_TIMER("tracked_frame_creation");
   new_frame_.reset(new Frame(cam_, feature_list, timestamp));
-  // SVO_STOP_TIMER("tracked_frame_creation");
+  SVO_STOP_TIMER("tracked_frame_creation");
   
   // process frame
   UpdateResult res = RESULT_FAILURE;
@@ -133,7 +133,12 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::processFirstFrame()
 FrameHandlerMono::UpdateResult FrameHandlerMono::processFirst_TFrame()
 {
   new_frame_->T_f_w_ = SE3(Matrix3d::Identity(), Vector3d::Zero());
-
+  if(klt_homography_init_.addFirst_TFrame(new_frame_) == initialization::FAILURE)
+    return RESULT_NO_KEYFRAME;
+  new_frame_->setKeyframe();
+  map_.addKeyframe(new_frame_);
+  stage_ = STAGE_SECOND_FRAME;
+  SVO_INFO_STREAM("Init: Selected first frame.");
   return RESULT_IS_KEYFRAME;
 }
 
@@ -165,7 +170,11 @@ FrameHandlerBase::UpdateResult FrameHandlerMono::processSecondFrame()
 
 FrameHandlerMono::UpdateResult FrameHandlerMono::processSecond_TFrame()
 {
-  
+  initialization::InitResult res = klt_homography_init_.addSecond_TFrame(new_frame_);//NOTE:这里做了初始化位姿，利用的是计算单应矩阵H
+  if(res == initialization::FAILURE)
+    return RESULT_FAILURE;
+  else if(res == initialization::NO_KEYFRAME)
+    return RESULT_NO_KEYFRAME;
 }
 
 FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
