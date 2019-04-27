@@ -22,7 +22,7 @@
     {
       "type": "shell",
       "label": "cmake_build_test",
-      "command": "cd ${fileDirname}/build && cmake -DCMAKE_BUILD_TYPE=Debug -g .. && make"
+      "command": "cd ${fileDirname}/build && cmake -DCMAKE_BUILD_TYPE=Debug .. && make"
     }
 
   ],

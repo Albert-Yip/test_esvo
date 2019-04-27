@@ -85,6 +85,8 @@ void computeHomography(
 void poseEstimate_triangulation(
     const vector<TrackedFeature>& feature_list_ref_,     
     const vector<TrackedFeature>& feature_list_cur_,
+    vector<Vector3d>& f_ref, 
+    vector<Vector3d>& f_cur,
     vector<int>& inliers,
     vector<Vector3d>& xyz_in_cur,
     SE3& T_cur_from_ref);

@@ -127,12 +127,12 @@ istream & BenchmarkNode::read_frame(istream &fin, vector<TrackedFeature> &featur
 void BenchmarkNode::runFromTrackingResult()
 {
   //Read frame
-  ifstream fin("/home/albert/workSpace/data/output_result_day_long2.txt");
+  ifstream fin("/home/albert/workSpace/data/output_result_day_short.txt");
   vector<TrackedFeature> feature_list;
   double timestamp = -1.0;
   while(read_frame(fin, feature_list, timestamp))
   {
-    cout<<"\nResult "<<":\n";
+    // cout<<"\nResult "<<":\n";
     for(auto iter=feature_list.begin(); iter!=feature_list.end(); iter++)
     {
         if((*iter).id == 0)
@@ -141,7 +141,7 @@ void BenchmarkNode::runFromTrackingResult()
             iter--;//erase删除后会返回下一个iter
             continue;
         }
-        cout<<timestamp<<"  "<<(*iter).id<<"  "<<(*iter).x<<"  "<<(*iter).y<<endl;
+        // cout<<timestamp<<"  "<<(*iter).id<<"  "<<(*iter).x<<"  "<<(*iter).y<<endl;
     }
     // process frame
     vo_->testESVO(feature_list, timestamp);

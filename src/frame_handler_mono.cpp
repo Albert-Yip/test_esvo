@@ -64,9 +64,7 @@ void FrameHandlerMono::testESVO(const vector<TrackedFeature> &feature_list, doub
   overlap_kfs_.clear();
 
   // create new frame
-  SVO_START_TIMER("tracked_frame_creation");
   new_frame_.reset(new Frame(cam_, feature_list, timestamp));
-  SVO_STOP_TIMER("tracked_frame_creation");
   
   // process frame
   UpdateResult res = RESULT_FAILURE;
