@@ -4,7 +4,8 @@
         "istream": "cpp",
         "iostream": "cpp",
         "vector": "cpp",
-        "iosfwd": "cpp"
+        "iosfwd": "cpp",
+        "cmath": "cpp"
     },
     "C_Cpp.dimInactiveRegions": true
 }

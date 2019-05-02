@@ -246,7 +246,7 @@ void DepthFilter::updateSeeds(FramePtr frame)
     }
 
     // compute tau
-    double tau = computeTau(T_ref_cur, it->ftr->f, z, px_error_angle);
+    double tau = computeTau(T_ref_cur, it->ftr->f, z, px_error_angle);//NOTE：这里的tau是指观测的分布中，高斯分布对应的标准差，通过偏移一个像素得到的深度的不确定性（参考14讲P327）
     double tau_inverse = 0.5 * (1.0/max(0.0000001, z-tau) - 1.0/(z+tau));
 
     // update the estimate
