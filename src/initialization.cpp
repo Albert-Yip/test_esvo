@@ -115,7 +115,29 @@ InitResult KltHomographyInit::addSecond_TFrame(FramePtr frame_cur)
   //因为已经做好tracking，而且ransac已经在tracking中完成，inliers设为全部重复出现特征的id，并估计T和三维位置
   feature_list_cur_.assign(frame_cur->feature_list_.begin(),frame_cur->feature_list_.end());
   vector<Vector3d> f_ref, f_cur;
-  poseEstimate_triangulation(feature_list_ref_,feature_list_cur_, f_ref, f_cur, inliers_, xyz_in_cur_, T_cur_from_ref_);
+
+  //temp fix for feature_list_ to px, NOTE:因为feature_list_与inliers对应的index不是一致的，inliers对应的是一一配对好的point_lists
+  vector<cv::Point2f> points_ref;
+  vector<cv::Point2f> points_cur;
+  cv::Point2f temp_point;
+  for(int i=0; i<feature_list_ref_.size(); i++)
+  {
+      for(int j=0; j<feature_list_cur_.size(); j++)
+      {
+          if(feature_list_ref_[i].id==feature_list_cur_[j].id)
+          {
+              temp_point.x = feature_list_ref_[i].x;
+              temp_point.y = feature_list_ref_[i].y;
+              points_ref.push_back(temp_point);
+              temp_point.x = feature_list_cur_[j].x;
+              temp_point.y = feature_list_cur_[j].y;
+              points_cur.push_back(temp_point);
+              break;
+          }
+      }
+  }
+
+  poseEstimate_triangulation(points_ref, points_cur, f_ref, f_cur, inliers_, xyz_in_cur_, T_cur_from_ref_);
 
   SVO_INFO_STREAM("Init: Epipolar RANSAC "<<inliers_.size()<<" inliers.");
   //triangulate all features and compute reprojection errors and inliers: output->inliers_, xyz_in_cur_, T_cur_from_ref_
@@ -135,12 +157,16 @@ InitResult KltHomographyInit::addSecond_TFrame(FramePtr frame_cur)
   frame_cur->T_f_w_.translation() =
       -frame_cur->T_f_w_.rotation_matrix()*(frame_ref_->pos() + scale*(frame_cur->pos() - frame_ref_->pos()));
 
+
   // For each inlier create 3D point and add feature in both frames
   SE3 T_world_cur = frame_cur->T_f_w_.inverse();
   for(vector<int>::iterator it=inliers_.begin(); it!=inliers_.end(); ++it)
   {
-    Vector2d px_cur(feature_list_cur_[*it].x, feature_list_cur_[*it].y);//Seg Fault,svo::Frame*]: Assertion `px != 0' failed.
-    Vector2d px_ref(feature_list_ref_[*it].x, feature_list_ref_[*it].y);
+    //NOTE:因为feature_list_与inliers对应的index不是一致的，inliers对应的是一一配对好的points_ref,cur
+    // Vector2d px_cur(feature_list_cur_[*it].x, feature_list_cur_[*it].y);//Seg Fault,svo::Frame*]: Assertion `px != 0' failed.
+    // Vector2d px_ref(feature_list_ref_[*it].x, feature_list_ref_[*it].y);
+    Vector2d px_cur(points_cur[*it].x, points_cur[*it].y);
+    Vector2d px_ref(points_ref[*it].x, points_ref[*it].y);
     if(frame_ref_->cam_->isInFrame(px_cur.cast<int>(), 10) && frame_ref_->cam_->isInFrame(px_ref.cast<int>(), 10) && xyz_in_cur_[*it].z() > 0)
     {
       Vector3d pos = T_world_cur * (xyz_in_cur_[*it]*scale);
@@ -255,36 +281,36 @@ void computeHomography(
 }
 
 void poseEstimate_triangulation(
-    const vector<TrackedFeature>& feature_list_ref_,     
-    const vector<TrackedFeature>& feature_list_cur_,
+    const vector<cv::Point2f> points1,     
+    const vector<cv::Point2f> points2,
     vector<Vector3d>& f_ref, 
     vector<Vector3d>& f_cur,
     vector<int>& inliers,
     vector<Vector3d>& xyz_in_cur,
     SE3& T_cur_from_ref)
 {
-  vector<cv::Point2f> points1;
-  vector<cv::Point2f> points2;
-  //-- 把匹配点转换为vector<Point2f>的形式
-  cv::Point2f temp_point;
-  int match_counter = 0;
+  // vector<cv::Point2f> points1;
+  // vector<cv::Point2f> points2;
+  // //-- 把匹配点转换为vector<Point2f>的形式
+  // cv::Point2f temp_point;
+  // int match_counter = 0;
   
-  for(int i=0; i<feature_list_ref_.size(); i++)
-  {
-      for(int j=0; j<feature_list_cur_.size(); j++)
-      {
-          if(feature_list_ref_[i].id==feature_list_cur_[j].id)
-          {
-              temp_point.x = feature_list_ref_[i].x;
-              temp_point.y = feature_list_ref_[i].y;
-              points1.push_back(temp_point);
-              temp_point.x = feature_list_cur_[j].x;
-              temp_point.y = feature_list_cur_[j].y;
-              points2.push_back(temp_point);
-              break;
-          }
-      }
-  }
+  // for(int i=0; i<feature_list_ref_.size(); i++)
+  // {
+  //     for(int j=0; j<feature_list_cur_.size(); j++)
+  //     {
+  //         if(feature_list_ref_[i].id==feature_list_cur_[j].id)
+  //         {
+  //             temp_point.x = feature_list_ref_[i].x;
+  //             temp_point.y = feature_list_ref_[i].y;
+  //             points1.push_back(temp_point);
+  //             temp_point.x = feature_list_cur_[j].x;
+  //             temp_point.y = feature_list_cur_[j].y;
+  //             points2.push_back(temp_point);
+  //             break;
+  //         }
+  //     }
+  // }
 
   //-- 计算本质矩阵
   cv::Point2d principal_point ( 170.2, 127.0 );	//相机光心, TUM dataset标定值

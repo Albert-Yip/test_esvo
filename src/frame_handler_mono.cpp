@@ -142,7 +142,7 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::processFirst_TFrame()
 
 FrameHandlerBase::UpdateResult FrameHandlerMono::processSecondFrame()
 {
-  initialization::InitResult res = klt_homography_init_.addSecondFrame(new_frame_);//NOTE:这里做了初始化位姿，利用的是计算单应矩阵H
+  initialization::InitResult res = klt_homography_init_.addSecondFrame(new_frame_);//NOTE:这里做了初始化位姿，利用的是计算单应矩阵H;同时利用三角测量计算深度
   if(res == initialization::FAILURE)
     return RESULT_FAILURE;
   else if(res == initialization::NO_KEYFRAME)
@@ -156,7 +156,7 @@ FrameHandlerBase::UpdateResult FrameHandlerMono::processSecondFrame()
   new_frame_->setKeyframe();
   double depth_mean, depth_min;
   frame_utils::getSceneDepth(*new_frame_, depth_mean, depth_min);
-  depth_filter_->addKeyframe(new_frame_, depth_mean, 0.5*depth_min);//NOTE:这里初始化了深度地图，计算深度是三角化，后续会有深度滤波器进行优化
+  depth_filter_->addKeyframe(new_frame_, depth_mean, 0.5*depth_min);//NOTE:这里初始化了深度地图，计算深度是之前的三角化，后续会有深度滤波器进行优化
 
   // add frame to map
   map_.addKeyframe(new_frame_);
@@ -168,11 +168,27 @@ FrameHandlerBase::UpdateResult FrameHandlerMono::processSecondFrame()
 
 FrameHandlerMono::UpdateResult FrameHandlerMono::processSecond_TFrame()
 {
-  initialization::InitResult res = klt_homography_init_.addSecond_TFrame(new_frame_);//NOTE:这里做了初始化位姿，利用的是计算单应矩阵H
+  initialization::InitResult res = klt_homography_init_.addSecond_TFrame(new_frame_);//NOTE:这里做了初始化位姿，利用的是计算本质矩阵E;同时利用三角测量计算深度
   if(res == initialization::FAILURE)
     return RESULT_FAILURE;
   else if(res == initialization::NO_KEYFRAME)
     return RESULT_NO_KEYFRAME;
+
+#ifdef USE_BUNDLE_ADJUSTMENT
+  ba::twoViewBA(new_frame_.get(), map_.lastKeyframe().get(), Config::lobaThresh(), &map_);
+#endif
+
+  new_frame_->setKeyframe();
+  double depth_mean, depth_min;
+  frame_utils::getSceneDepth(*new_frame_, depth_mean, depth_min);
+  depth_filter_->addKeyframe(new_frame_, depth_mean, 0.5*depth_min);//NOTE:这里初始化了深度地图，后续会有深度滤波器进行优化
+
+  // add frame to map
+  map_.addKeyframe(new_frame_);
+  stage_ = STAGE_DEFAULT_FRAME;
+  klt_homography_init_.reset();
+  SVO_INFO_STREAM("Init: Selected second frame, triangulated initial map.");
+  return RESULT_IS_KEYFRAME;    
 }
 
 FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
