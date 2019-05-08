@@ -36,7 +36,7 @@ FrameHandlerMono::FrameHandlerMono(vk::AbstractCamera* cam) :
   reprojector_(cam_, map_),
   depth_filter_(NULL)
 {
-  initialize();
+  // initialize();
 }
 
 void FrameHandlerMono::initialize()
@@ -188,7 +188,7 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::processSecond_TFrame()
   new_frame_->setKeyframe();
   double depth_mean, depth_min;
   frame_utils::getSceneDepth(*new_frame_, depth_mean, depth_min);
-  depth_filter_->addKeyframe(new_frame_, depth_mean, 0.5*depth_min);//NOTE:这里初始化了深度地图，后续会有深度滤波器进行优化
+  // depth_filter_->addKeyframe(new_frame_, depth_mean, 0.5*depth_min);//NOTE:这里初始化了深度地图，后续会有深度滤波器进行优化
 
   // add frame to map
   map_.addKeyframe(new_frame_);
@@ -402,7 +402,7 @@ void FrameHandlerMono::resetAll()
   new_frame_.reset();
   core_kfs_.clear();
   overlap_kfs_.clear();
-  depth_filter_->reset();
+  // depth_filter_->reset();
 }
 
 void FrameHandlerMono::setFirstFrame(const FramePtr& first_frame)
