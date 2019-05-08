@@ -122,19 +122,20 @@ InitResult KltHomographyInit::addSecond_TFrame(FramePtr frame_cur)
   cv::Point2f temp_point;
   for(int i=0; i<feature_list_ref_.size(); i++)
   {
-      for(int j=0; j<feature_list_cur_.size(); j++)
+    for(int j=0; j<feature_list_cur_.size(); j++)
+    {
+      if(feature_list_ref_[i].id==feature_list_cur_[j].id)
       {
-          if(feature_list_ref_[i].id==feature_list_cur_[j].id)
-          {
-              temp_point.x = feature_list_ref_[i].x;
-              temp_point.y = feature_list_ref_[i].y;
-              points_ref.push_back(temp_point);
-              temp_point.x = feature_list_cur_[j].x;
-              temp_point.y = feature_list_cur_[j].y;
-              points_cur.push_back(temp_point);
-              break;
-          }
+        ft_ID_list_.push_back(feature_list_cur_[j].id);
+        temp_point.x = feature_list_ref_[i].x;
+        temp_point.y = feature_list_ref_[i].y;
+        points_ref.push_back(temp_point);
+        temp_point.x = feature_list_cur_[j].x;
+        temp_point.y = feature_list_cur_[j].y;
+        points_cur.push_back(temp_point);
+        break;
       }
+    }
   }
 
   poseEstimate_triangulation(points_ref, points_cur, f_ref, f_cur, inliers_, xyz_in_cur_, T_cur_from_ref_);
@@ -172,11 +173,11 @@ InitResult KltHomographyInit::addSecond_TFrame(FramePtr frame_cur)
       Vector3d pos = T_world_cur * (xyz_in_cur_[*it]*scale);
       Point* new_point = new Point(pos);
 
-      Feature* ftr_cur(new Feature(frame_cur.get(), new_point, px_cur, f_cur[*it], 0));//Seg Fault
+      Feature* ftr_cur(new Feature(frame_cur.get(), ft_ID_list_[*it], new_point, px_cur, f_cur[*it]));//Seg Fault
       frame_cur->addFeature(ftr_cur);
       new_point->addFrameRef(ftr_cur);
 
-      Feature* ftr_ref(new Feature(frame_ref_.get(), new_point, px_ref, f_ref[*it], 0));
+      Feature* ftr_ref(new Feature(frame_ref_.get(), ft_ID_list_[*it], new_point, px_ref, f_ref[*it]));
       frame_ref_->addFeature(ftr_ref);
       new_point->addFrameRef(ftr_ref);
     }
@@ -186,6 +187,7 @@ InitResult KltHomographyInit::addSecond_TFrame(FramePtr frame_cur)
 
 void KltHomographyInit::reset()
 {
+  feature_list_cur_.clear();
   px_cur_.clear();
   frame_ref_.reset();
 }

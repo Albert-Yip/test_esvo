@@ -74,6 +74,13 @@ void FrameHandlerMono::testESVO(const vector<TrackedFeature> &feature_list, doub
     res = processSecond_TFrame();
   else if(stage_ == STAGE_FIRST_FRAME)
     res = processFirst_TFrame();
+
+  // set last frame
+  last_frame_ = new_frame_;
+  new_frame_.reset();
+
+  // finish processing
+  finishFrameProcessingCommon(last_frame_->id_, res, last_frame_->nObs());
 }
 
 void FrameHandlerMono::addImage(const cv::Mat& img, const double timestamp)
@@ -193,7 +200,38 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::processSecond_TFrame()
 
 FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
 {
-  
+  // Set initial pose TODO use prior
+  new_frame_->T_f_w_ = last_frame_->T_f_w_;
+  //给new_frame_的Features赋值
+  for(const auto& last_ft: last_frame_->fts_)
+  {
+    for(const auto& cur_tr_ft : new_frame_->feature_list_)
+    {
+      if(last_ft->feature_ID==cur_tr_ft.id)
+      {
+        Vector2d px(cur_tr_ft.x,cur_tr_ft.y);
+        Feature* ftr_cur(new Feature(new_frame_.get(),last_ft->feature_ID, px));
+        new_frame_->addFeature(ftr_cur);
+      }
+    }
+  }
+
+
+  //在这之前new_frame_已经有了：图像金字塔vec<mat> img_pyr_，检测或跟踪到的List<*Feature> fts_ 包含好2D粗略3D位置，粗略估计的位姿T_f_w_
+  //Pose和Structure都是使用高斯牛顿法进行优化，参考十四讲P112、164
+  // pose optimization
+  SVO_START_TIMER("pose_optimizer");
+  size_t sfba_n_edges_final;
+  double sfba_thresh, sfba_error_init, sfba_error_final;
+  pose_optimizer::optimizeGaussNewton(
+      Config::poseOptimThresh(), Config::poseOptimNumIter(), false,
+      new_frame_, sfba_thresh, sfba_error_init, sfba_error_final, sfba_n_edges_final);//NOTE: 第三步pose optimization
+  SVO_STOP_TIMER("pose_optimizer");
+  SVO_LOG4(sfba_thresh, sfba_error_init, sfba_error_final, sfba_n_edges_final);
+  SVO_DEBUG_STREAM("PoseOptimizer:\t ErrInit = "<<sfba_error_init<<"px\t thresh = "<<sfba_thresh);
+  SVO_DEBUG_STREAM("PoseOptimizer:\t ErrFin. = "<<sfba_error_final<<"px\t nObsFin. = "<<sfba_n_edges_final);
+  if(sfba_n_edges_final < 20)
+    return RESULT_FAILURE;
 }
 
 FrameHandlerBase::UpdateResult FrameHandlerMono::processFrame()

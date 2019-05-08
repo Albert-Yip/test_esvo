@@ -31,6 +31,7 @@ struct Feature
     EDGELET
   };
 
+  int feature_ID;       //NOTE:self-added var
   FeatureType type;     //!< Type can be corner or edgelet.
   Frame* frame;         //!< Pointer to frame in which the feature was detected.
   Vector2d px;          //!< Coordinates in pixels on pyramid level 0.
@@ -66,6 +67,27 @@ struct Feature
     f(_f),
     level(_level),
     point(_point),
+    grad(1.0,0.0)
+  {}
+  Feature(Frame* _frame, int _ft_ID, Point* _point, const Vector2d& _px, const Vector3d& _f) :
+    type(CORNER),
+    frame(_frame),
+    px(_px),
+    f(_f),
+    level(0),
+    feature_ID(_ft_ID),
+    point(_point),
+    grad(1.0,0.0)
+  {}
+
+  Feature(Frame* _frame, int _ft_ID, const Vector2d& _px) :
+    type(CORNER),
+    frame(_frame),
+    px(_px),
+    f(frame->cam_->cam2world(px)),/// Project from pixels to world coordiantes. Returns a bearing vector of unit length.
+    level(0),
+    feature_ID(_ft_ID),
+    point(NULL),
     grad(1.0,0.0)
   {}
 };

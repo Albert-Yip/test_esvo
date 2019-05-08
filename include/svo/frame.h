@@ -42,7 +42,7 @@ class Frame : boost::noncopyable
 public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   
-  vector<TrackedFeature>        feature_list_;          //!< feature list.
+  vector<TrackedFeature>        feature_list_;          //!< feature list.NOTE:地位类似于frame中的ImgPyr，储存的是未完全配对好的特征点ID、(u，v)的信息
 
   static int                    frame_counter_;         //!< Counts the number of created frames. Used to set the unique id.
   int                           id_;                    //!< Unique id of the frame.

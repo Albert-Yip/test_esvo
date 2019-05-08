@@ -136,6 +136,9 @@ TARGET_LINK_LIBRARIES(svo ${LINK_LIBS})
 ADD_EXECUTABLE(test_pipeline test/test_pipeline.cpp)
 TARGET_LINK_LIBRARIES(test_pipeline svo)
 
+ADD_EXECUTABLE(old_test_pipeline test/old_test_pipeline.cpp)
+TARGET_LINK_LIBRARIES(old_test_pipeline svo)
+
 # ADD_EXECUTABLE(test_matcher test/test_matcher.cpp)
 # TARGET_LINK_LIBRARIES(test_matcher svo)
 

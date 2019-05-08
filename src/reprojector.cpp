@@ -179,7 +179,7 @@ bool Reprojector::reprojectCell(Cell& cell, FramePtr frame)
     if(it->pt->type_ == Point::TYPE_UNKNOWN && it->pt->n_succeeded_reproj_ > 10)
       it->pt->type_ = Point::TYPE_GOOD;
 
-    Feature* new_feature = new Feature(frame.get(), it->px, matcher_.search_level_);
+    Feature* new_feature = new Feature(frame.get(), it->px, matcher_.search_level_);//NOTE:tracking得到的特征点只赋值了像素坐标px
     frame->addFeature(new_feature);
 
     // Here we add a reference in the feature to the 3D point, the other way

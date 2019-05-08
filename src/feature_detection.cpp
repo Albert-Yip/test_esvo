@@ -77,7 +77,7 @@ void FastDetector::detect(
 #if __SSE2__
       fast::fast_corner_detect_10_sse2(
           (fast::fast_byte*) img_pyr[L].data, img_pyr[L].cols,
-          img_pyr[L].rows, img_pyr[L].cols, 20, fast_corners);
+          img_pyr[L].rows, img_pyr[L].cols, 20, fast_corners);//Segmentation fault,由于双线程DF线程会运行到这里，但是由于并不进行detect，没有imgpyr
 #elif HAVE_FAST_NEON
       fast::fast_corner_detect_9_neon(
           (fast::fast_byte*) img_pyr[L].data, img_pyr[L].cols,

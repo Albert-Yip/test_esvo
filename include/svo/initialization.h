@@ -47,6 +47,7 @@ public:
 protected:
   vector<TrackedFeature> feature_list_ref_;      
   vector<TrackedFeature> feature_list_cur_;
+  vector<int> ft_ID_list_;
   vector<cv::Point2f> px_ref_;      //!< keypoints to be tracked in reference frame.
   vector<cv::Point2f> px_cur_;      //!< tracked keypoints in current frame.
   vector<Vector3d> f_ref_;          //!< bearing vectors corresponding to the keypoints in the reference image.
