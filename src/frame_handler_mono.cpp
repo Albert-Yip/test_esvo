@@ -212,6 +212,7 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
         Vector2d px(cur_tr_ft.x,cur_tr_ft.y);
         Feature* ftr_cur(new Feature(new_frame_.get(),last_ft->feature_ID, px));
         new_frame_->addFeature(ftr_cur);
+        ftr_cur->point = last_ft->point;
       }
     }
   }
