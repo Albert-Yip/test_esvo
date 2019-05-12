@@ -197,19 +197,19 @@ void detectFeatures(
     vector<cv::Point2f>& px_vec,
     vector<Vector3d>& f_vec)
 {
-  Features new_features;
-  feature_detection::FastDetector detector(
-      frame->img().cols, frame->img().rows, Config::gridSize(), Config::nPyrLevels());
-  detector.detect(frame.get(), frame->img_pyr_, Config::triangMinCornerScore(), new_features);
+  // Features new_features;
+  // feature_detection::FastDetector detector(
+  //     frame->img().cols, frame->img().rows, Config::gridSize(), Config::nPyrLevels());
+  // detector.detect(frame.get(), frame->img_pyr_, Config::triangMinCornerScore(), new_features);
 
-  // now for all maximum corners, initialize a new seed
-  px_vec.clear(); px_vec.reserve(new_features.size());
-  f_vec.clear(); f_vec.reserve(new_features.size());
-  std::for_each(new_features.begin(), new_features.end(), [&](Feature* ftr){//NOTE: [&] capture all variables within scope by reference,这里的作用就是把new_features里的feature分别复制给ftr，用于后续pushback赋值)
-    px_vec.push_back(cv::Point2f(ftr->px[0], ftr->px[1]));
-    f_vec.push_back(ftr->f);
-    delete ftr;
-  });
+  // // now for all maximum corners, initialize a new seed
+  // px_vec.clear(); px_vec.reserve(new_features.size());
+  // f_vec.clear(); f_vec.reserve(new_features.size());
+  // std::for_each(new_features.begin(), new_features.end(), [&](Feature* ftr){//NOTE: [&] capture all variables within scope by reference,这里的作用就是把new_features里的feature分别复制给ftr，用于后续pushback赋值)
+  //   px_vec.push_back(cv::Point2f(ftr->px[0], ftr->px[1]));
+  //   f_vec.push_back(ftr->f);
+  //   delete ftr;
+  // });
 }
 
 void trackKlt(

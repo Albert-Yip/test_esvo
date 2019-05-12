@@ -36,7 +36,7 @@ FrameHandlerMono::FrameHandlerMono(vk::AbstractCamera* cam) :
   reprojector_(cam_, map_),
   depth_filter_(NULL)
 {
-  // initialize();
+  initialize();
 }
 
 void FrameHandlerMono::initialize()
@@ -47,6 +47,7 @@ void FrameHandlerMono::initialize()
   DepthFilter::callback_t depth_filter_cb = boost::bind(
       &MapPointCandidates::newCandidatePoint, &map_.point_candidates_, _1, _2);
   depth_filter_ = new DepthFilter(feature_detector, depth_filter_cb);
+  // depth_filter_ = new DepthFilter(depth_filter_cb);
   depth_filter_->startThread();
 }
 
@@ -188,7 +189,7 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::processSecond_TFrame()
   new_frame_->setKeyframe();
   double depth_mean, depth_min;
   frame_utils::getSceneDepth(*new_frame_, depth_mean, depth_min);
-  // depth_filter_->addKeyframe(new_frame_, depth_mean, 0.5*depth_min);//NOTE:这里初始化了深度地图，后续会有深度滤波器进行优化
+  depth_filter_->addKeyframe(new_frame_, depth_mean, 0.5*depth_min);//NOTE:这里初始化了深度地图，后续会有深度滤波器进行优化
 
   // add frame to map
   map_.addKeyframe(new_frame_);
@@ -202,21 +203,38 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
 {
   // Set initial pose TODO use prior
   new_frame_->T_f_w_ = last_frame_->T_f_w_;
-  //给new_frame_的Features赋值
-  for(const auto& last_ft: last_frame_->fts_)
+  // //给new_frame_的Features赋值，这里的features也不是前后帧11对应的
+  // for(const auto& last_ft: last_frame_->fts_)
+  // {
+  //   for(const auto& cur_tr_ft : new_frame_->feature_list_)
+  //   {
+  //     if(last_ft->feature_ID==cur_tr_ft.id)
+  //     {
+  //       Vector2d px(cur_tr_ft.x,cur_tr_ft.y);
+  //       Feature* ftr_cur(new Feature(new_frame_.get(),last_ft->feature_ID, px));
+  //       new_frame_->addFeature(ftr_cur);
+  //       ftr_cur->point = last_ft->point;//设置3维信息
+  //       break;
+  //     }
+  //   }
+  // }
+  
+  //给new_frame_的Features赋值，这里的features也不是前后帧11对应的
+  FramePtr last_KF = map_.keyframes_.back();
+  for(const auto& last_KF_ft : last_KF->fts_)
   {
     for(const auto& cur_tr_ft : new_frame_->feature_list_)
     {
-      if(last_ft->feature_ID==cur_tr_ft.id)
+      if(last_KF_ft->feature_ID == cur_tr_ft.id)
       {
         Vector2d px(cur_tr_ft.x,cur_tr_ft.y);
-        Feature* ftr_cur(new Feature(new_frame_.get(),last_ft->feature_ID, px));
+        Feature* ftr_cur(new Feature(new_frame_.get(),last_KF_ft->feature_ID, px));
         new_frame_->addFeature(ftr_cur);
-        ftr_cur->point = last_ft->point;
+        ftr_cur->point = last_KF_ft->point;//设置3维信息
+        break;
       }
     }
   }
-
 
   //在这之前new_frame_已经有了：图像金字塔vec<mat> img_pyr_，检测或跟踪到的List<*Feature> fts_ 包含好2D粗略3D位置，粗略估计的位姿T_f_w_
   //Pose和Structure都是使用高斯牛顿法进行优化，参考十四讲P112、164
@@ -233,6 +251,31 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
   SVO_DEBUG_STREAM("PoseOptimizer:\t ErrFin. = "<<sfba_error_final<<"px\t nObsFin. = "<<sfba_n_edges_final);
   if(sfba_n_edges_final < 20)
     return RESULT_FAILURE;
+
+  // structure optimization
+  SVO_START_TIMER("point_optimizer");
+  optimizeStructure(new_frame_, Config::structureOptimMaxPts(), Config::structureOptimNumIter());
+  SVO_STOP_TIMER("point_optimizer");
+
+  //在此之后，new_frame_的feature的空间点new_frame_->fts_ （list）、以及位姿new_frame_->T_f_w_都经过优化
+ 
+  // select keyframe
+  core_kfs_.insert(new_frame_);
+  setTrackingQuality(sfba_n_edges_final);
+  if(tracking_quality_ == TRACKING_INSUFFICIENT)
+  {
+    new_frame_->T_f_w_ = last_frame_->T_f_w_; // reset to avoid crazy pose jumps
+    return RESULT_FAILURE;
+  }
+
+  double depth_mean, depth_min;
+  frame_utils::getSceneDepth(*new_frame_, depth_mean, depth_min);//遍历features，求已有三维坐标的深度d求最小值和中位数
+  if(!needNewKf(depth_mean) || tracking_quality_ == TRACKING_BAD)//NOTE:判断是否需要新的关键帧
+  {
+    depth_filter_->addFrame(new_frame_);//NOTE:不是关键帧，更新深度滤波器
+    return RESULT_NO_KEYFRAME;
+  }
+
 }
 
 FrameHandlerBase::UpdateResult FrameHandlerMono::processFrame()

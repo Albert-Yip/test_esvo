@@ -55,6 +55,15 @@ DepthFilter::DepthFilter(feature_detection::DetectorPtr feature_detector, callba
     new_keyframe_mean_depth_(0.0)
 {}
 
+DepthFilter::DepthFilter(callback_t seed_converged_cb) :
+    seed_converged_cb_(seed_converged_cb),
+    seeds_updating_halt_(false),
+    thread_(NULL),
+    new_keyframe_set_(false),
+    new_keyframe_min_depth_(0.0),
+    new_keyframe_mean_depth_(0.0)
+{}
+
 DepthFilter::~DepthFilter()
 {
   stopThread();
@@ -114,9 +123,10 @@ void DepthFilter::addKeyframe(FramePtr frame, double depth_mean, double depth_mi
 void DepthFilter::initializeSeeds(FramePtr frame)
 {
   Features new_features;
-  feature_detector_->setExistingFeatures(frame->fts_);//把之前已检测到的features占据网格
-  feature_detector_->detect(frame.get(), frame->img_pyr_,
-                            Config::triangMinCornerScore(), new_features);//检测新的features存入new_features
+  feature_detector_->setExistingFeatures(frame->fts_);//把之前已检测到的features占据网格,所以之后的detect不会去检测这些区域
+  // feature_detector_->detect(frame.get(), frame->img_pyr_,
+  //                           Config::triangMinCornerScore(), new_features);//检测新的features存入new_features
+  feature_detector_->detect(frame.get(), new_features);//NOTE_TODO: 这里会把outliers给new_features
 
   // initialize a seed for every new feature
   seeds_updating_halt_ = true;

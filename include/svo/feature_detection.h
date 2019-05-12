@@ -51,11 +51,15 @@ public:
 
   virtual ~AbstractDetector() {};
 
+  // virtual void detect(
+  //     Frame* frame,
+  //     const ImgPyr& img_pyr,
+  //     const double detection_threshold,
+  //     Features& fts) = 0;
+
   virtual void detect(
       Frame* frame,
-      const ImgPyr& img_pyr,
-      const double detection_threshold,
-      Features& fts) = 0;
+      Features& new_features) = 0;
 
   /// Flag the grid cell as occupied
   void setGridOccpuancy(const Vector2d& px);
@@ -94,11 +98,15 @@ public:
 
   virtual ~FastDetector() {}
 
+  // virtual void detect(
+  //     Frame* frame,
+  //     const ImgPyr& img_pyr,
+  //     const double detection_threshold,
+  //     Features& fts);
+
   virtual void detect(
       Frame* frame,
-      const ImgPyr& img_pyr,
-      const double detection_threshold,
-      Features& fts);
+      Features& new_features);
 };
 
 } // namespace feature_detection

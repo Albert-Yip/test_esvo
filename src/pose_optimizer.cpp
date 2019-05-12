@@ -48,16 +48,16 @@ void optimizeGaussNewton(
   for(auto it=frame->fts_.begin(); it!=frame->fts_.end(); ++it)
   {
     if((*it)->point == NULL)
-      continue;
+      continue;//NOTE：判断是否已经有深度信息
     Vector2d e = vk::project2d((*it)->f)
                - vk::project2d(frame->T_f_w_ * (*it)->point->pos_);//NOTE:这里就是重投影误差e=u-pi(T*P)
-    e *= 1.0 / (1<<(*it)->level);
+    e *= 1.0 / (1<<(*it)->level);//NOTE:(1<<(*it)->level)表示按照金字塔层数左移（也就是*2），可以省去
     errors.push_back(e.norm());
   }
   if(errors.empty())
     return;
   vk::robust_cost::MADScaleEstimator scale_estimator;
-  estimated_scale = scale_estimator.compute(errors);
+  estimated_scale = scale_estimator.compute(errors);//NOTE：返回errors的中位数
 
   num_obs = errors.size();
   chi2_vec_init.reserve(num_obs);

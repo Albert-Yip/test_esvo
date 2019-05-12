@@ -89,6 +89,9 @@ public:
       feature_detection::DetectorPtr feature_detector,
       callback_t seed_converged_cb);
 
+  DepthFilter(
+    callback_t seed_converged_cb);
+
   virtual ~DepthFilter();
 
   /// Start this thread when seed updating should be in a parallel thread.
