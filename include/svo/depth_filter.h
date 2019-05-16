@@ -77,7 +77,7 @@ public:
     Options()
     : check_ftr_angle(false),
       epi_search_1d(false),
-      verbose(false),
+      verbose(true),
       use_photometric_disparity_error(false),
       max_n_kfs(3),
       sigma_i_sq(5e-4),
@@ -102,6 +102,8 @@ public:
 
   /// Add frame to the queue to be processed.
   void addFrame(FramePtr frame);
+
+  void addTFrame(FramePtr frame);
 
   /// Add new keyframe to the queue
   void addKeyframe(FramePtr frame, double depth_mean, double depth_min);
@@ -159,6 +161,8 @@ protected:
 
   /// Update all seeds with a new measurement frame.
   virtual void updateSeeds(FramePtr frame);
+
+  virtual void updateSeeds_T(FramePtr frame);
 
   /// When a new keyframe arrives, the frame queue should be cleared.
   void clearFrameQueue();

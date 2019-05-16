@@ -164,7 +164,7 @@ bool Reprojector::reprojectCell(Cell& cell, FramePtr frame)
 
     bool found_match = true;
     if(options_.find_match_direct)
-      found_match = matcher_.findMatchDirect(*it->pt, *frame, it->px);
+      found_match = matcher_.findMatchDirect(*it->pt, *frame, it->px);//NOTE：针对每一个地图点，通过优化寻找直接法匹配，即使用findMatchDirect()
     if(!found_match)
     {
       it->pt->n_failed_reproj_++;
@@ -179,12 +179,12 @@ bool Reprojector::reprojectCell(Cell& cell, FramePtr frame)
     if(it->pt->type_ == Point::TYPE_UNKNOWN && it->pt->n_succeeded_reproj_ > 10)
       it->pt->type_ = Point::TYPE_GOOD;
 
-    Feature* new_feature = new Feature(frame.get(), it->px, matcher_.search_level_);//NOTE:tracking得到的特征点只赋值了像素坐标px
+    Feature* new_feature = new Feature(frame.get(), it->px, matcher_.search_level_);//NOTE:tracking得到的特征点赋值了像素坐标px
     frame->addFeature(new_feature);
 
     // Here we add a reference in the feature to the 3D point, the other way
     // round is only done if this frame is selected as keyframe.
-    new_feature->point = it->pt;
+    new_feature->point = it->pt;//NOTE:tracking得到的特征点赋值了3d坐标point
 
     if(matcher_.ref_ftr_->type == Feature::EDGELET)
     {

@@ -122,6 +122,12 @@ public:
       const double d_max,
       double& depth);
 
+  bool findMatch_Triangulation(
+      const Frame& ref_frame,
+      const Frame& cur_frame,
+      const Feature& ref_ftr,
+      double& depth);
+  
   void createPatchFromPatchWithBorder();
 };
 

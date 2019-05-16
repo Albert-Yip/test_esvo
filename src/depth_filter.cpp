@@ -105,6 +105,23 @@ void DepthFilter::addFrame(FramePtr frame)
     updateSeeds(frame);
 }
 
+void DepthFilter::addTFrame(FramePtr frame)
+{
+  if(thread_ != NULL)
+  {
+    {
+      lock_t lock(frame_queue_mut_);
+      if(frame_queue_.size() > 2)
+        frame_queue_.pop();
+      frame_queue_.push(frame);
+    }
+    seeds_updating_halt_ = false;
+    frame_queue_cond_.notify_one();
+  }
+  else
+    updateSeeds_T(frame);
+}
+
 void DepthFilter::addKeyframe(FramePtr frame, double depth_mean, double depth_min)
 {
   new_keyframe_min_depth_ = depth_min;
@@ -126,7 +143,7 @@ void DepthFilter::initializeSeeds(FramePtr frame)
   feature_detector_->setExistingFeatures(frame->fts_);//把之前已检测到的features占据网格,所以之后的detect不会去检测这些区域
   // feature_detector_->detect(frame.get(), frame->img_pyr_,
   //                           Config::triangMinCornerScore(), new_features);//检测新的features存入new_features
-  feature_detector_->detect(frame.get(), new_features);//NOTE_TODO: 这里会把outliers给new_features
+  feature_detector_->detect(frame.get(), new_features);//NOTE_TODO: 这里会把outliers给new_features，疑问：之前的detect不也会引入outliers吗？
 
   // initialize a seed for every new feature
   seeds_updating_halt_ = true;
@@ -263,7 +280,7 @@ void DepthFilter::updateSeeds(FramePtr frame)
     updateSeed(1./z, tau_inverse*tau_inverse, &*it);
     ++n_updates;
 
-    if(frame->isKeyframe())
+    if(frame->isKeyframe())//？？？
     {
       // The feature detector should not initialize new seeds close to this location
       feature_detector_->setGridOccpuancy(matcher_.px_cur_);
@@ -289,6 +306,106 @@ void DepthFilter::updateSeeds(FramePtr frame)
       */
       {
         seed_converged_cb_(point, it->sigma2); // put in candidate list
+        //NOTE: 转到newCandidatePoint(Point* point, double depth_sigma2)
+      }
+      it = seeds_.erase(it);
+    }
+    else if(isnan(z_inv_min))
+    {
+      SVO_WARN_STREAM("z_min is NaN");
+      it = seeds_.erase(it);
+    }
+    else
+      ++it;
+  }
+}
+
+void DepthFilter::updateSeeds_T(FramePtr frame)
+{
+  //此时在参考帧（关键帧）的所有features都会在depthFilter的list<Seed>上有seed对应，存储其深度均值和方差
+
+  // update only a limited number of seeds, because we don't have time to do it
+  // for all the seeds in every frame!
+  size_t n_updates=0, n_failed_matches=0, n_seeds = seeds_.size();
+  lock_t lock(seeds_mut_);
+  list<Seed>::iterator it=seeds_.begin();
+
+  const double focal_length = frame->cam_->errorMultiplier2();
+  double px_noise = 1.0;
+  double px_error_angle = atan(px_noise/(2.0*focal_length))*2.0; // law of chord (sehnensatz)
+
+  while( it!=seeds_.end())
+  {
+    // set this value true when seeds updating should be interrupted
+    if(seeds_updating_halt_)
+      return;
+
+    // check if seed is not already too old
+    if((Seed::batch_counter - it->batch_id) > options_.max_n_kfs) {
+      it = seeds_.erase(it);
+      continue;
+    }
+
+    // check if point is visible in the current image
+    SE3 T_ref_cur = it->ftr->frame->T_f_w_ * frame->T_f_w_.inverse();
+    const Vector3d xyz_f(T_ref_cur.inverse()*(1.0/it->mu * it->ftr->f) );
+    if(xyz_f.z() < 0.0)  {
+      ++it; // behind the camera
+      continue;
+    }
+    if(!frame->cam_->isInFrame(frame->f2c(xyz_f).cast<int>())) {
+      ++it; // point does not project in image
+      continue;
+    }
+
+    // we are using inverse depth coordinates
+    float z_inv_min = it->mu + sqrt(it->sigma2);
+    float z_inv_max = max(it->mu - sqrt(it->sigma2), 0.00000001f);
+    double z;
+    if(!matcher_.findMatch_Triangulation(
+         *it->ftr->frame, *frame, *it->ftr, z))//NOTE:极线搜索+三角化深度估计，对象是当前帧和参考关键帧
+    {//NOTE:此处找不到匹配是指当前帧的tracked_list中没找到共视的seed对应的id，这其实非常有可能，因为关键帧中的features在后续中会丢失，且tracking对于丢失并没有重新匹配ID的方式，所以基本是某个特征点一丢失这个seed就没用了？
+      it->b++; // increase outlier probability when no match was found
+      ++it;
+      ++n_failed_matches;
+      continue;
+    }
+
+    // compute tau
+    double tau = computeTau(T_ref_cur, it->ftr->f, z, px_error_angle);//NOTE：这里的tau是指观测的分布中，高斯分布对应的标准差，通过偏移一个像素得到的深度的不确定性（参考14讲P327）
+    double tau_inverse = 0.5 * (1.0/max(0.0000001, z-tau) - 1.0/(z+tau));
+
+    // update the estimate
+    updateSeed(1./z, tau_inverse*tau_inverse, &*it);
+    ++n_updates;
+
+    if(frame->isKeyframe())//？？？
+    {
+      // The feature detector should not initialize new seeds close to this location
+      feature_detector_->setGridOccpuancy(matcher_.px_cur_);
+    }
+
+    // if the seed has converged, we initialize a new candidate point and remove the seed
+    if(sqrt(it->sigma2) < it->z_range/options_.seed_convergence_sigma2_thresh)
+    {
+      assert(it->ftr->point == NULL); // TODO this should not happen anymore
+      Vector3d xyz_world(it->ftr->frame->T_f_w_.inverse() * (it->ftr->f * (1.0/it->mu)));
+      Point* point = new Point(xyz_world, it->ftr);
+      it->ftr->point = point;
+      /* FIXME it is not threadsafe to add a feature to the frame here.
+      if(frame->isKeyframe())
+      {
+        Feature* ftr = new Feature(frame.get(), matcher_.px_cur_, matcher_.search_level_);
+        ftr->point = point;
+        point->addFrameRef(ftr);
+        frame->addFeature(ftr);
+        it->ftr->frame->addFeature(it->ftr);
+      }
+      else
+      */
+      {
+        seed_converged_cb_(point, it->sigma2); // put in candidate list
+        //NOTE: 转到newCandidatePoint(Point* point, double depth_sigma2)
       }
       it = seeds_.erase(it);
     }
@@ -318,7 +435,7 @@ void DepthFilter::getSeedsCopy(const FramePtr& frame, std::list<Seed>& seeds)
   }
 }
 
-void DepthFilter::updateSeed(const float x, const float tau2, Seed* seed)
+void DepthFilter::updateSeed(const float x, const float tau2, Seed* seed)//NOTE：得到深度的协方差，这里要参考论文:《Video-based, Real-Time Multi View Stereo》 
 {
   float norm_scale = sqrt(seed->sigma2 + tau2);
   if(std::isnan(norm_scale))

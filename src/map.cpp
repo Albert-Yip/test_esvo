@@ -223,7 +223,7 @@ void MapPointCandidates::addCandidatePointToFrame(FramePtr frame)
   PointCandidateList::iterator it=candidates_.begin();
   while(it != candidates_.end())
   {
-    if(it->first->obs_.front()->frame == frame.get())
+    if(it->first->obs_.front()->frame == frame.get())//NOTE：如果看到该candidate的最近frame就是当前frame，这里是要把之前已经收敛的3d点加入到当前帧的features中，同时删除该candidates
     {
       // insert feature in the frame
       it->first->type_ = Point::TYPE_UNKNOWN;

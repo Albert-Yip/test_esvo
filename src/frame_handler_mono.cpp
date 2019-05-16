@@ -236,7 +236,7 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
     }
   }
 
-  //在这之前new_frame_已经有了：图像金字塔vec<mat> img_pyr_，检测或跟踪到的List<*Feature> fts_ 包含好2D粗略3D位置，粗略估计的位姿T_f_w_
+
   //Pose和Structure都是使用高斯牛顿法进行优化，参考十四讲P112、164
   // pose optimization
   SVO_START_TIMER("pose_optimizer");
@@ -270,9 +270,11 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
 
   double depth_mean, depth_min;
   frame_utils::getSceneDepth(*new_frame_, depth_mean, depth_min);//遍历features，求已有三维坐标的深度d求最小值和中位数
-  if(!needNewKf(depth_mean) || tracking_quality_ == TRACKING_BAD)//NOTE:判断是否需要新的关键帧
+  // if(!needNewKf(depth_mean) || tracking_quality_ == TRACKING_BAD)//NOTE:判断是否需要新的关键帧
+  int needKF = 0;
+  if(!needKF)
   {
-    depth_filter_->addFrame(new_frame_);//NOTE:不是关键帧，更新深度滤波器
+    depth_filter_->addTFrame(new_frame_);//NOTE:不是关键帧，更新深度滤波器
     return RESULT_NO_KEYFRAME;
   }
 

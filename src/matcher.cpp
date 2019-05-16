@@ -106,6 +106,7 @@ void warpAffine(
 
 } // namespace warp
 
+
 bool depthFromTriangulation(
     const SE3& T_search_ref,
     const Vector3d& f_ref,
@@ -120,6 +121,25 @@ bool depthFromTriangulation(
   const Vector2d depth2 = - AtA.inverse()*A.transpose()*T_search_ref.translation();
   depth = fabs(depth2[0]);
   return true;
+}
+
+bool Matcher::findMatch_Triangulation(
+      const Frame& ref_frame,
+      const Frame& cur_frame,
+      const Feature& ref_ftr,
+      double& depth)
+{
+  for(const auto& cur_tr_ft : cur_frame.feature_list_)
+  {
+    if(ref_ftr.feature_ID == cur_tr_ft.id)
+    {
+      px_cur_ = Vector2d(cur_tr_ft.x, cur_tr_ft.y);
+      SE3 T_cur_ref = cur_frame.T_f_w_ * ref_frame.T_f_w_.inverse();
+      if(depthFromTriangulation(T_cur_ref, ref_ftr.f, cur_frame.cam_->cam2world(px_cur_), depth))//三角定位求得深度估计值
+        return true;
+    }
+  }
+  return false;
 }
 
 void Matcher::createPatchFromPatchWithBorder()
