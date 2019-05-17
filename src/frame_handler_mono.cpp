@@ -47,7 +47,6 @@ void FrameHandlerMono::initialize()
   DepthFilter::callback_t depth_filter_cb = boost::bind(
       &MapPointCandidates::newCandidatePoint, &map_.point_candidates_, _1, _2);
   depth_filter_ = new DepthFilter(feature_detector, depth_filter_cb);
-  // depth_filter_ = new DepthFilter(depth_filter_cb);
   depth_filter_->startThread();
 }
 

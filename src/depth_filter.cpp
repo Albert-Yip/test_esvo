@@ -110,16 +110,16 @@ void DepthFilter::addTFrame(FramePtr frame)
   if(thread_ != NULL)
   {
     {
-      lock_t lock(frame_queue_mut_);
+      lock_t lock(frame_queue_mut_);//使用公共资源frame_queue_前先lock互斥体
       if(frame_queue_.size() > 2)
         frame_queue_.pop();
       frame_queue_.push(frame);
     }
     seeds_updating_halt_ = false;
-    frame_queue_cond_.notify_one();
+    frame_queue_cond_.notify_one();// 唤醒等待条件变量的一个线程：即调用frame_queue_cond_.wait()的线程，204行
   }
   else
-    updateSeeds_T(frame);
+    updateSeeds_T(frame);//QS：thread_什么时候会为NULL？？？
 }
 
 void DepthFilter::addKeyframe(FramePtr frame, double depth_mean, double depth_min)
@@ -193,9 +193,9 @@ void DepthFilter::reset()
     SVO_INFO_STREAM("DepthFilter: RESET.");
 }
 
-void DepthFilter::updateSeedsLoop()
+void DepthFilter::updateSeedsLoop()//NOTE:深度滤波器的循环主体
 {
-  while(!boost::this_thread::interruption_requested())//在没有interrupt请求之前，一直循环进行df线程
+  while(!boost::this_thread::interruption_requested())//在没有interrupt请求之前，一直循环进行df线程，也就是在stopthread（）的thread_->interrupt()之前该线程都会一直进行这个循环
   {
     FramePtr frame;
     {
@@ -215,7 +215,7 @@ void DepthFilter::updateSeedsLoop()
         frame_queue_.pop();
       }
     }
-    updateSeeds(frame);
+    updateSeeds_T(frame);
     if(frame->isKeyframe())
       initializeSeeds(frame);
   }
