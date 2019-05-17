@@ -114,6 +114,8 @@ protected:
   /// Keyframe selection criterion.
   virtual bool needNewKf(double scene_depth_mean);
 
+  virtual bool needNewKf_T(const size_t num_observations);
+
   void setCoreKfs(size_t n_closest);
 };
 

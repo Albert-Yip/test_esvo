@@ -270,13 +270,55 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
   double depth_mean, depth_min;
   frame_utils::getSceneDepth(*new_frame_, depth_mean, depth_min);//遍历features，求已有三维坐标的深度d求最小值和中位数
   // if(!needNewKf(depth_mean) || tracking_quality_ == TRACKING_BAD)//NOTE:判断是否需要新的关键帧
-  int needKF = 0;
-  if(!needKF)
+  if(!needNewKf_T(sfba_n_edges_final))
   {
     depth_filter_->addTFrame(new_frame_);//NOTE:不是关键帧，更新深度滤波器
     return RESULT_NO_KEYFRAME;
   }
 
+  new_frame_->setKeyframe();
+  SVO_DEBUG_STREAM("New keyframe selected.");//NOTE:后边是需要插入新的关键帧相关操作
+
+  // new keyframe selected
+  for(Features::iterator it=new_frame_->fts_.begin(); it!=new_frame_->fts_.end(); ++it)
+    if((*it)->point != NULL)
+      (*it)->point->addFrameRef(*it);
+  map_.point_candidates_.addCandidatePointToFrame(new_frame_);
+
+  // optional bundle adjustment
+#ifdef USE_BUNDLE_ADJUSTMENT
+  if(Config::lobaNumIter() > 0)
+  {
+    SVO_START_TIMER("local_ba");
+    setCoreKfs(Config::coreNKfs());
+    size_t loba_n_erredges_init, loba_n_erredges_fin;
+    double loba_err_init, loba_err_fin;
+    ba::localBA(new_frame_.get(), &core_kfs_, &map_,
+                loba_n_erredges_init, loba_n_erredges_fin,
+                loba_err_init, loba_err_fin);
+    SVO_STOP_TIMER("local_ba");
+    SVO_LOG4(loba_n_erredges_init, loba_n_erredges_fin, loba_err_init, loba_err_fin);
+    SVO_DEBUG_STREAM("Local BA:\t RemovedEdges {"<<loba_n_erredges_init<<", "<<loba_n_erredges_fin<<"} \t "
+                     "Error {"<<loba_err_init<<", "<<loba_err_fin<<"}");
+  }
+#endif
+
+  // init new depth-filters
+  depth_filter_->addKeyframe(new_frame_, depth_mean, 0.5*depth_min);//NOT:这里是深度滤波器插入关键帧的主要操作，init Seeds，把当前帧监测到的特征点用来初始化种子，已有feature直接占据像素网格，新feature做seeds_.push_back，均值为1.0/depth_mean，标准差为1.0/（6*depth_min）。
+  //注意只在插入新的关键帧时会做feature detect，普通帧靠 光流跟踪（pose） 和 极线搜索(Depth Filter)
+
+  // if limited number of keyframes, remove the one furthest apart
+  if(Config::maxNKfs() > 2 && map_.size() >= Config::maxNKfs())
+  {
+    FramePtr furthest_frame = map_.getFurthestKeyframe(new_frame_->pos());
+    depth_filter_->removeKeyframe(furthest_frame); // TODO this interrupts the mapper thread, maybe we can solve this better
+    map_.safeDeleteFrame(furthest_frame);
+  }
+
+  // add keyframe to map
+  map_.addKeyframe(new_frame_);
+
+  return RESULT_IS_KEYFRAME;
 }
 
 FrameHandlerBase::UpdateResult FrameHandlerMono::processFrame()
@@ -470,6 +512,16 @@ bool FrameHandlerMono::needNewKf(double scene_depth_mean)
       return false;
   }
   return true;
+}
+
+bool FrameHandlerMono::needNewKf_T(const size_t num_observations)
+{
+  if(num_observations < 160)
+  {
+    SVO_WARN_STREAM_THROTTLE(0.5, "Tracking "<<num_observations<<"features, less than "<< 160 <<" features! Trying to insert new Keyframe!");
+    return true;
+  }
+  return false;
 }
 
 void FrameHandlerMono::setCoreKfs(size_t n_closest)
