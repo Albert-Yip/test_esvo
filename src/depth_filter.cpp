@@ -234,6 +234,7 @@ void DepthFilter::updateSeeds(FramePtr frame)
   const double focal_length = frame->cam_->errorMultiplier2();
   double px_noise = 1.0;
   double px_error_angle = atan(px_noise/(2.0*focal_length))*2.0; // law of chord (sehnensatz)
+  int converged_counter = 0;
 
   while( it!=seeds_.end())
   {
@@ -307,6 +308,7 @@ void DepthFilter::updateSeeds(FramePtr frame)
       {
         seed_converged_cb_(point, it->sigma2); // put in candidate list
         //NOTE: 转到newCandidatePoint(Point* point, double depth_sigma2)
+        converged_counter++;
       }
       it = seeds_.erase(it);
     }
@@ -318,6 +320,8 @@ void DepthFilter::updateSeeds(FramePtr frame)
     else
       ++it;
   }
+  if(options_.verbose && converged_counter!=0)
+    SVO_INFO_STREAM("NOTE: "<<converged_counter << " seeds have converged and been put into candidate list");  
 }
 
 void DepthFilter::updateSeeds_T(FramePtr frame)
@@ -333,6 +337,7 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
   const double focal_length = frame->cam_->errorMultiplier2();
   double px_noise = 1.0;
   double px_error_angle = atan(px_noise/(2.0*focal_length))*2.0; // law of chord (sehnensatz)
+  int converged_counter = 0;
 
   while( it!=seeds_.end())
   {
@@ -365,6 +370,9 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
     if(!matcher_.findMatch_Triangulation(
          *it->ftr->frame, *frame, *it->ftr, z))//NOTE:极线搜索+三角化深度估计，对象是当前帧和参考关键帧
     {//NOTE:此处找不到匹配是指当前帧的tracked_list中没找到共视的seed对应的id，这其实非常有可能，因为关键帧中的features在后续中会丢失，且tracking对于丢失并没有重新匹配ID的方式，所以基本是某个特征点一丢失这个seed就没用了？
+
+    //////BUG：一直只在这里边++，没有进行任何updateSeed//////
+
       it->b++; // increase outlier probability when no match was found
       ++it;
       ++n_failed_matches;
@@ -406,6 +414,7 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
       {
         seed_converged_cb_(point, it->sigma2); // put in candidate list
         //NOTE: 转到newCandidatePoint(Point* point, double depth_sigma2)
+        converged_counter++;
       }
       it = seeds_.erase(it);
     }
@@ -417,6 +426,8 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
     else
       ++it;
   }
+  if(options_.verbose && converged_counter!=0)
+    SVO_INFO_STREAM("NOTE: "<<converged_counter << " seeds have converged and been put into candidate list");  
 }
 
 void DepthFilter::clearFrameQueue()

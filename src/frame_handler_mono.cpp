@@ -516,9 +516,10 @@ bool FrameHandlerMono::needNewKf(double scene_depth_mean)
 
 bool FrameHandlerMono::needNewKf_T(const size_t num_observations)
 {
-  if(num_observations < 160)
+  int thres = 90;
+  if(num_observations < thres)
   {
-    SVO_WARN_STREAM_THROTTLE(0.5, "Tracking "<<num_observations<<"features, less than "<< 160 <<" features! Trying to insert new Keyframe!");
+    SVO_WARN_STREAM_THROTTLE(0.5, "Tracking "<<num_observations<<" features, less than "<< thres <<" features! Trying to insert new Keyframe!");
     return true;
   }
   return false;

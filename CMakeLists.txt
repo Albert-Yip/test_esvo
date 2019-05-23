@@ -41,7 +41,7 @@ IF(CMAKE_COMPILER_IS_GNUCC)
 ELSE()
   SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
 ENDIF()
-SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O3 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
+SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS} -O0 -fsee -fomit-frame-pointer -fno-signed-zeros -fno-math-errno -funroll-loops")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g") 
 
@@ -136,8 +136,8 @@ TARGET_LINK_LIBRARIES(svo ${LINK_LIBS})
 ADD_EXECUTABLE(test_pipeline test/test_pipeline.cpp)
 TARGET_LINK_LIBRARIES(test_pipeline svo)
 
-ADD_EXECUTABLE(old_test_pipeline test/old_test_pipeline.cpp)
-TARGET_LINK_LIBRARIES(old_test_pipeline svo)
+# ADD_EXECUTABLE(old_test_pipeline test/old_test_pipeline.cpp)
+# TARGET_LINK_LIBRARIES(old_test_pipeline svo)
 
 # ADD_EXECUTABLE(test_matcher test/test_matcher.cpp)
 # TARGET_LINK_LIBRARIES(test_matcher svo)
