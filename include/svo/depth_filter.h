@@ -81,7 +81,7 @@ public:
       use_photometric_disparity_error(false),
       max_n_kfs(3),
       sigma_i_sq(5e-4),
-      seed_convergence_sigma2_thresh(200.0)
+      seed_convergence_sigma2_thresh(50.0)//NOTE:ori 200.0
     {}
   } options_;
 

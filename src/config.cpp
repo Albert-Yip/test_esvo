@@ -58,11 +58,11 @@ Config::Config() :
     n_pyr_levels(3),
     use_imu(false),
     core_n_kfs(3),
-    map_scale(1.0),
+    map_scale(3.0),//NOTE:ori 1.0
     grid_size(25),
     init_min_disparity(50.0),
-    init_min_tracked(80),//ori:50
-    init_min_inliers(60),//ori:40
+    init_min_tracked(60),//ori:50
+    init_min_inliers(50),//ori:40
     klt_max_level(4),
     klt_min_level(2),
     reproj_thresh(2.0),
@@ -80,8 +80,8 @@ Config::Config() :
     max_n_kfs(0),
     img_imu_delay(0.0),
     max_fts(120),
-    quality_min_fts(80),//ori:50
-    quality_max_drop_fts(60)//ori:40
+    quality_min_fts(60),//ori:50
+    quality_max_drop_fts(80)//ori:40
 #endif
 {}
 
