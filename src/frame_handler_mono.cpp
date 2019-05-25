@@ -81,6 +81,7 @@ void FrameHandlerMono::testESVO(const vector<TrackedFeature> &feature_list, doub
 
   // finish processing
   finishFrameProcessingCommon(last_frame_->id_, res, last_frame_->nObs());
+  std::cout<<"frame pointer = "<<last_frame_.get()<<std::endl;
 }
 
 void FrameHandlerMono::addImage(const cv::Mat& img, const double timestamp)
@@ -516,7 +517,7 @@ bool FrameHandlerMono::needNewKf(double scene_depth_mean)
 
 bool FrameHandlerMono::needNewKf_T(const size_t num_observations)
 {
-  int thres = 150;
+  int thres = 120;
   if(num_observations < thres)
   {
     SVO_WARN_STREAM_THROTTLE(0.5, "Tracking "<<num_observations<<" features, less than "<< thres <<" features! Trying to insert new Keyframe!");

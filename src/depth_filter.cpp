@@ -412,6 +412,9 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
       else
       */
       {
+        Feature* ftr = new Feature(frame.get(),it->ftr->feature_ID, matcher_.px_cur_);
+        ftr->point = point;
+        point->addFrameRef(ftr);
         seed_converged_cb_(point, it->sigma2); // put in candidate list
         //NOTE: 转到newCandidatePoint(Point* point, double depth_sigma2)
         converged_counter++;

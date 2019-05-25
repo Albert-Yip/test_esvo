@@ -153,7 +153,7 @@ void BenchmarkNode::runFromTrackingResult()
     {
       std::cout << "Frame-Id: " << vo_->lastFrame()->id_ << " \t"
                   << "#Features: " << vo_->lastNumObservations() << " \t"
-                  << "Proc. Time: " << vo_->lastProcessingTime()*1000 << "ms \n";
+                  << "Proc. Time: " << vo_->lastProcessingTime()*1000 << "ms \n" << std::endl;
 
       // access the pose of the camera via vo_->lastFrame()->T_f_w_.
     }
