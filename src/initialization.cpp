@@ -319,13 +319,13 @@ void poseEstimate_triangulation(
   double focal_length = 194.8;			//相机焦距, TUM dataset标定值
   cv::Mat essential_matrix;
   essential_matrix = findEssentialMat ( points1, points2, focal_length, principal_point );
-  cout<<"essential_matrix is "<<endl<< essential_matrix<<endl;
+  // cout<<"essential_matrix is "<<endl<< essential_matrix<<endl;
   //-- 从本质矩阵中恢复旋转和平移信息.
   cv::Mat R, t;
   recoverPose ( essential_matrix, points1, points2, R, t, focal_length, principal_point );
-  cout<<"R is "<<endl<<R<<endl;
-  cout<<"t is "<<endl<<t<<endl;
-  SVO_INFO_STREAM("Trying to convert Mat to Eigen");
+  // cout<<"R is "<<endl<<R<<endl;
+  // cout<<"t is "<<endl<<t<<endl;
+  // SVO_INFO_STREAM("Trying to convert Mat to Eigen");
   // 将像素坐标转换至相机归一化坐标
   cv::Mat K = ( cv::Mat_<double> ( 3,3 ) << 194.8, 0, 170.2, 0, 194.8, 127.0, 0, 0, 1);
 

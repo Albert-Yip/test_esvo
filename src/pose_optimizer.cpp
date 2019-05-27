@@ -61,6 +61,7 @@ void optimizeGaussNewton(
   estimated_scale = scale_estimator.compute(errors);//NOTE：返回errors的中位数
 
   num_obs = errors.size();
+  std::cout << "NOTICE: Size of init_num_obs = " << num_obs << std::endl;
   chi2_vec_init.reserve(num_obs);
   chi2_vec_final.reserve(num_obs);
   double scale = estimated_scale;
@@ -159,6 +160,7 @@ void optimizeGaussNewton(
               << "\t error init = " << error_init
               << "\t error end = " << error_final << std::endl;
   num_obs -= n_deleted_refs;
+  std::cout << "NOTICE: Size of finial_num_obs = " << num_obs << std::endl;
 }
 
 } // namespace pose_optimizer
