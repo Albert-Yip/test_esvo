@@ -346,10 +346,10 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
       return;
 
     // check if seed is not already too old
-    if((Seed::batch_counter - it->batch_id) > options_.max_n_kfs) {
-      it = seeds_.erase(it);
-      continue;
-    }
+    // if((Seed::batch_counter - it->batch_id) > options_.max_n_kfs) {
+    //   it = seeds_.erase(it);
+    //   continue;
+    // }
 
     // check if point is visible in the current image
     SE3 T_ref_cur = it->ftr->frame->T_f_w_ * frame->T_f_w_.inverse();
@@ -370,9 +370,6 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
     if(!matcher_.findMatch_Triangulation(
          *it->ftr->frame, *frame, *it->ftr, z))//NOTE:极线搜索+三角化深度估计，对象是当前帧和参考关键帧
     {//NOTE:此处找不到匹配是指当前帧的tracked_list中没找到共视的seed对应的id，这其实非常有可能，因为关键帧中的features在后续中会丢失，且tracking对于丢失并没有重新匹配ID的方式，所以基本是某个特征点一丢失这个seed就没用了？
-
-    //////BUG：一直只在这里边++，没有进行任何updateSeed//////
-
       it->b++; // increase outlier probability when no match was found
       ++it;
       ++n_failed_matches;
@@ -386,6 +383,8 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
     // update the estimate
     updateSeed(1./z, tau_inverse*tau_inverse, &*it);
     ++n_updates;
+    double sigma_test = sqrt(it->sigma2);
+    // std::cout<<"Seed ID = "<< it->id << ",   tau = " << tau << ",   tau_inverse = " << tau_inverse <<",   sigma = " << sigma_test<<std::endl;
 
     if(frame->isKeyframe())//？？？
     {
@@ -430,7 +429,7 @@ void DepthFilter::updateSeeds_T(FramePtr frame)
       ++it;
   }
   if(options_.verbose && converged_counter!=0)
-    SVO_INFO_STREAM("NOTE: "<<converged_counter << " seeds have converged and been put into candidate list");  
+    SVO_WARN_STREAM("NOTE: "<<converged_counter << " seeds have converged and been put into candidate list");  
 }
 
 void DepthFilter::clearFrameQueue()

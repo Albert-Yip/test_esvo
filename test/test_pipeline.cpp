@@ -127,7 +127,7 @@ istream & BenchmarkNode::read_frame(istream &fin, vector<TrackedFeature> &featur
 void BenchmarkNode::runFromTrackingResult()
 {
   //Read frame
-  ifstream fin("/home/albert/workSpace/data/output_result_day_200_10.txt");
+  ifstream fin("/home/albert/workSpace/data/output_result_day_200_f.txt");
   vector<TrackedFeature> feature_list;
   double timestamp = -1.0;
   while(read_frame(fin, feature_list, timestamp))

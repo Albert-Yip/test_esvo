@@ -141,8 +141,13 @@ void optimizeGaussNewton(
     if(e.norm() > reproj_thresh_scaled)
     {
       // we don't need to delete a reference in the point since it was not created yet
-      (*it)->point = NULL;
-      ++n_deleted_refs;
+      (*it)->point->n_failed_pose_estimate_++;
+      if((*it)->point->n_failed_pose_estimate_ > 3)
+      {
+        (*it)->point = NULL;
+        ++n_deleted_refs;
+      }
+
     }
   }
 

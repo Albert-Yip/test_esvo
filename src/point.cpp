@@ -35,6 +35,7 @@ Point::Point(const Vector3d& pos) :
   type_(TYPE_UNKNOWN),
   n_failed_reproj_(0),
   n_succeeded_reproj_(0),
+  n_failed_pose_estimate_(0),
   last_structure_optim_(0)
 {}
 
@@ -49,6 +50,7 @@ Point::Point(const Vector3d& pos, Feature* ftr) :
   type_(TYPE_UNKNOWN),
   n_failed_reproj_(0),
   n_succeeded_reproj_(0),
+  n_failed_pose_estimate_(0),
   last_structure_optim_(0)
 {
   obs_.push_front(ftr);

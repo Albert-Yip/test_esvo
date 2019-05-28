@@ -103,6 +103,9 @@ protected:
   /// process_TFrame.
   virtual UpdateResult process_TFrame();
 
+  /// Try relocalizing the frame.
+  virtual UpdateResult relocalize_TFrame();
+
   /// Try relocalizing the frame at relative position to provided keyframe.
   virtual UpdateResult relocalizeFrame(
       const SE3& T_cur_ref,
