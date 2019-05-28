@@ -339,7 +339,10 @@ void FrameHandlerMono::setCoreKfs(size_t n_closest)
 
 FrameHandlerMono::UpdateResult FrameHandlerMono::processFirst_TFrame()
 {
-  new_frame_->T_f_w_ = SE3(Matrix3d::Identity(), Vector3d::Zero());
+  if(stage_ == STAGE_FIRST_FRAME)
+    new_frame_->T_f_w_ = SE3(Matrix3d::Identity(), Vector3d::Zero());
+  else if(stage_ == STAGE_RELOCALIZING)
+    new_frame_->T_f_w_ = last_frame_->T_f_w_;
   if(klt_homography_init_.addFirst_TFrame(new_frame_) == initialization::FAILURE)
     return RESULT_NO_KEYFRAME;
   new_frame_->setKeyframe();
@@ -484,18 +487,13 @@ FrameHandlerMono::UpdateResult FrameHandlerMono::process_TFrame()
 }
 
 
-FrameHandlerMono::UpdateResult FrameHandlerMono::relocalize_TFrame()
-{
-  return RESULT_IS_KEYFRAME;
-}
-
 
 bool FrameHandlerMono::needNewKf_T(const size_t num_observations)
 {
   int thres = 150;
   if(num_observations < thres)
   {
-    SVO_WARN_STREAM_THROTTLE(0.5, "Tracking "<<num_observations<<" features, less than "<< thres <<" features! Trying to insert new Keyframe!");
+    SVO_WARN_STREAM("Tracking "<<num_observations<<" features, less than "<< thres <<" features! Trying to insert new Keyframe!");
     return true;
   }
   return false;
@@ -519,10 +517,10 @@ void FrameHandlerMono::testESVO(const vector<TrackedFeature> &feature_list, doub
     res = process_TFrame();
   else if(stage_ == STAGE_SECOND_FRAME)
     res = processSecond_TFrame();
-  else if(stage_ == STAGE_FIRST_FRAME)
+  else if(stage_ == STAGE_FIRST_FRAME || stage_ == STAGE_RELOCALIZING)
     res = processFirst_TFrame();
-  else if(stage_ == STAGE_RELOCALIZING)
-    res = relocalize_TFrame();  
+  // else if(stage_ == STAGE_RELOCALIZING)
+  //   res = relocalize_TFrame();  
 
   // set last frame
   last_frame_ = new_frame_;

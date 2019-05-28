@@ -182,6 +182,7 @@ InitResult KltHomographyInit::addSecond_TFrame(FramePtr frame_cur)
       new_point->addFrameRef(ftr_ref);
     }
   }
+  vector<int>().swap(ft_ID_list_);
   return SUCCESS;
 }
 
